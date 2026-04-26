@@ -7,284 +7,152 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0d1117;
-    --bg2: #161b22;
-    --bg3: #21262d;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text2: #8b949e;
-    --green: #3fb950;
-    --red: #f85149;
-    --blue: #58a6ff;
-    --yellow: #d29922;
-    --purple: #bc8cff;
-    --accent: #1f6feb;
+    --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+    --text:#e6edf3; --text2:#8b949e;
+    --green:#3fb950; --red:#f85149; --blue:#58a6ff;
+    --accent:#1f6feb; --yellow:#d29922;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;}
 
-  header {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-  }
-  header h1 { font-size: 18px; font-weight: 700; color: var(--blue); }
-  .header-right { display: flex; gap: 10px; align-items: center; }
-  #last-update { font-size: 12px; color: var(--text2); }
-  .btn {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 14px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: opacity 0.2s;
-  }
-  .btn:hover { opacity: 0.85; }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
-  .btn-danger { background: var(--red); }
-  .btn-outline {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-  }
-  .btn-outline:hover { background: var(--bg3); }
+  header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  header h1{font-size:17px;font-weight:700;color:var(--blue);}
+  .hdr-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  #last-update{font-size:11px;color:var(--text2);}
 
-  main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 40px; }
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 13px;
+    cursor:pointer;font-size:13px;font-weight:600;transition:opacity .2s;}
+  .btn:hover{opacity:.85;}
+  .btn-sm{padding:3px 9px;font-size:12px;}
+  .btn-danger{background:var(--red);}
+  .btn-success{background:#238636;}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .btn-outline:hover{background:var(--bg3);}
 
-  /* ── Summary Cards ── */
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 20px;
-  }
-  .card-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
-  .card-value { font-size: 22px; font-weight: 700; }
-  .card-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
-  .pos { color: var(--green); }
-  .neg { color: var(--red); }
-  .neu { color: var(--text2); }
+  main{max-width:1200px;margin:0 auto;padding:18px 14px 40px;}
 
-  /* ── Chart ── */
-  .chart-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin-bottom: 20px;
-  }
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-  }
-  .chart-header h2 { font-size: 15px; font-weight: 600; }
-  .range-btns { display: flex; gap: 6px; }
-  .range-btn {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text2);
-    border-radius: 5px;
-    padding: 4px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .range-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .chart-wrap { height: 200px; }
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:18px;}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;}
+  .card-label{font-size:11px;color:var(--text2);margin-bottom:5px;}
+  .card-value{font-size:20px;font-weight:700;}
+  .card-sub{font-size:11px;color:var(--text2);margin-top:3px;}
+  .pos{color:var(--green);} .neg{color:var(--red);} .neu{color:var(--text2);}
 
-  /* ── Section ── */
-  .section { margin-bottom: 20px; }
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .section-title {
-    font-size: 15px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .badge {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 2px 10px;
-    font-size: 12px;
-    color: var(--text2);
-  }
-  .section-summary {
-    font-size: 13px;
-    color: var(--text2);
-    display: flex;
-    gap: 16px;
-  }
+  .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:18px;}
+  .chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .chart-header h2{font-size:14px;font-weight:600;}
+  .range-btns{display:flex;gap:5px;}
+  .range-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);
+    border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer;transition:all .15s;}
+  .range-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .chart-wrap{height:190px;}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  thead { background: var(--bg3); }
-  th {
-    padding: 10px 14px;
-    text-align: right;
-    font-size: 12px;
-    color: var(--text2);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  th:first-child { text-align: left; }
-  td {
-    padding: 11px 14px;
-    text-align: right;
-    border-top: 1px solid var(--border);
-    font-size: 13px;
-    white-space: nowrap;
-  }
-  td:first-child { text-align: left; }
-  tr:hover td { background: rgba(255,255,255,0.03); }
-  .ticker { font-weight: 700; color: var(--blue); }
-  .name-cell { color: var(--text2); font-size: 12px; }
-  .action-cell { display: flex; gap: 6px; justify-content: flex-end; }
+  .section{margin-bottom:18px;}
+  .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .section-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .badge{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:11px;color:var(--text2);}
+  .section-actions{display:flex;gap:6px;align-items:center;}
+  .section-info{font-size:12px;color:var(--text2);}
 
-  /* ── Spinner ── */
-  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  table{width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  thead{background:var(--bg3);}
+  th{padding:9px 12px;text-align:right;font-size:11px;color:var(--text2);font-weight:600;white-space:nowrap;}
+  th:first-child{text-align:left;}
+  td{padding:10px 12px;text-align:right;border-top:1px solid var(--border);font-size:13px;white-space:nowrap;}
+  td:first-child{text-align:left;}
+  tr:hover td{background:rgba(255,255,255,.025);}
+  .ticker{font-weight:700;color:var(--blue);}
+  .name-cell{color:var(--text2);font-size:11px;}
+  .act{display:flex;gap:4px;justify-content:flex-end;}
 
-  /* ── Modal ── */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    width: 360px;
-    max-width: 95vw;
-  }
-  .modal h3 { font-size: 16px; margin-bottom: 18px; }
-  .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
-  .form-group input, .form-group select {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 8px 12px;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
-  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
-  .loading-row td { text-align: center; color: var(--text2); padding: 20px; }
+  .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--blue);
+    border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
 
-  /* ── Bank section ── */
-  .bank-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 10px;
-  }
-  .bank-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .bank-info .bank-name { font-weight: 600; margin-bottom: 3px; }
-  .bank-info .bank-note { font-size: 12px; color: var(--text2); }
-  .bank-amount { font-size: 18px; font-weight: 700; color: var(--text); }
-  .bank-actions { display: flex; gap: 5px; }
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px;width:380px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+  .modal h3{font-size:15px;margin-bottom:16px;}
+  .fg{margin-bottom:12px;}
+  .fg label{display:block;font-size:11px;color:var(--text2);margin-bottom:4px;}
+  .fg input,.fg select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);padding:7px 11px;font-size:13px;outline:none;transition:border-color .2s;}
+  .fg input:focus,.fg select:focus{border-color:var(--accent);}
+  .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .info-box{background:var(--bg3);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7;}
+  .info-box b{color:var(--text);}
 
-  .empty-hint { text-align: center; padding: 24px; color: var(--text2); font-size: 13px; }
-  .price-loading { color: var(--text2); font-size: 12px; }
+  /* Bank */
+  .bank-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px;}
+  .bank-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 15px;
+    display:flex;justify-content:space-between;align-items:center;}
+  .bank-name{font-weight:600;margin-bottom:2px;}
+  .bank-note{font-size:11px;color:var(--text2);}
+  .bank-amount{font-size:17px;font-weight:700;}
+  .bank-acts{display:flex;gap:4px;margin-top:5px;}
 
-  @media (max-width: 640px) {
-    .summary-grid { grid-template-columns: 1fr 1fr; }
-    table { font-size: 12px; }
-    th, td { padding: 8px 8px; }
-    .action-cell { flex-direction: column; gap: 3px; }
+  /* Transaction log */
+  .txn-section{margin-bottom:18px;}
+  .txn-toggle{background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;padding:4px 0;}
+  .txn-toggle:hover{color:var(--text);}
+  #txn-log{display:none;}
+
+  .empty-hint{text-align:center;padding:22px;color:var(--text2);font-size:13px;}
+  .price-err{color:var(--red);font-size:11px;}
+
+  @media(max-width:640px){
+    .summary-grid{grid-template-columns:1fr 1fr;}
+    th,td{padding:7px 7px;font-size:12px;}
   }
 </style>
 </head>
 <body>
-
 <header>
   <h1>📊 Tony 資產總覽</h1>
-  <div class="header-right">
-    <span id="last-update">尚未更新</span>
+  <div class="hdr-r">
+    <span id="last-update">—</span>
     <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ 刷新</button>
-    <button class="btn btn-sm" onclick="openModal('tw')">+ 台股</button>
-    <button class="btn btn-sm" onclick="openModal('us')">+ 美股</button>
-    <button class="btn btn-sm" onclick="openModal('bank')">+ 存摺</button>
+    <button class="btn btn-sm" onclick="openAddModal('tw')">+ 台股</button>
+    <button class="btn btn-sm" onclick="openAddModal('us')">+ 美股</button>
+    <button class="btn btn-sm" onclick="openAddModal('bank')">+ 存摺</button>
   </div>
 </header>
 
 <main>
-  <!-- Summary Cards -->
+  <!-- Summary -->
   <div class="summary-grid">
     <div class="card">
       <div class="card-label">總資產（TWD）</div>
-      <div class="card-value" id="total-assets">—</div>
-      <div class="card-sub" id="assets-sub">台股 + 美股 + 存款</div>
+      <div class="card-value" id="c-total">—</div>
+      <div class="card-sub" id="c-total-sub">台股＋美股＋存款</div>
     </div>
     <div class="card">
-      <div class="card-label">總損益</div>
-      <div class="card-value" id="total-pnl">—</div>
-      <div class="card-sub" id="pnl-sub">—</div>
+      <div class="card-label">未實現損益</div>
+      <div class="card-value" id="c-upnl">—</div>
+      <div class="card-sub" id="c-upnl-pct">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">已實現損益</div>
+      <div class="card-value" id="c-rpnl">—</div>
+      <div class="card-sub" id="c-rpnl-sub">歷史累積</div>
     </div>
     <div class="card">
       <div class="card-label">台股市值</div>
-      <div class="card-value" id="tw-total">—</div>
-      <div class="card-sub" id="tw-pnl-sub">—</div>
+      <div class="card-value" id="c-tw">—</div>
+      <div class="card-sub" id="c-tw-sub">—</div>
     </div>
     <div class="card">
-      <div class="card-label">美股市值（含匯率）</div>
-      <div class="card-value" id="us-total">—</div>
-      <div class="card-sub" id="us-pnl-sub">—</div>
+      <div class="card-label">美股市值（TWD）</div>
+      <div class="card-value" id="c-us">—</div>
+      <div class="card-sub" id="c-us-sub">—</div>
     </div>
     <div class="card">
-      <div class="card-label">銀行存款</div>
-      <div class="card-value" id="bank-total">—</div>
-      <div class="card-sub">現金 + 活存 + 定存</div>
-    </div>
-    <div class="card">
-      <div class="card-label">美元匯率</div>
-      <div class="card-value" id="usd-rate">—</div>
-      <div class="card-sub">USD/TWD</div>
+      <div class="card-label">銀行存款 ／ 匯率</div>
+      <div class="card-value" id="c-bank">—</div>
+      <div class="card-sub" id="c-rate">USD/TWD —</div>
     </div>
   </div>
 
@@ -293,46 +161,32 @@
     <div class="chart-header">
       <h2>總資產走勢</h2>
       <div class="range-btns">
-        <button class="range-btn active" data-range="30" onclick="setRange(this,30)">30D</button>
-        <button class="range-btn" data-range="90" onclick="setRange(this,90)">90D</button>
-        <button class="range-btn" data-range="180" onclick="setRange(this,180)">180D</button>
-        <button class="range-btn" data-range="9999" onclick="setRange(this,9999)">ALL</button>
+        <button class="range-btn active" onclick="setRange(this,30)">30D</button>
+        <button class="range-btn" onclick="setRange(this,90)">90D</button>
+        <button class="range-btn" onclick="setRange(this,180)">180D</button>
+        <button class="range-btn" onclick="setRange(this,9999)">ALL</button>
       </div>
     </div>
-    <div class="chart-wrap">
-      <canvas id="asset-chart"></canvas>
-    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
   </div>
 
-  <!-- Taiwan Stocks -->
+  <!-- TW Stocks -->
   <div class="section">
     <div class="section-header">
-      <div class="section-title">
-        🇹🇼 台股
-        <span class="badge" id="tw-count">0 檔</span>
-      </div>
-      <div class="section-summary">
-        <span id="tw-summary-value">市值 —</span>
-        <span id="tw-summary-pnl">損益 —</span>
+      <div class="section-title">🇹🇼 台股 <span class="badge" id="tw-badge">0 檔</span></div>
+      <div class="section-actions">
+        <span class="section-info" id="tw-info"></span>
+        <button class="btn btn-sm" onclick="openAddModal('tw')">+ 新增</button>
       </div>
     </div>
     <table>
-      <thead>
-        <tr>
-          <th>股票</th>
-          <th>現價</th>
-          <th>漲跌%</th>
-          <th>股數</th>
-          <th>均價</th>
-          <th>成本</th>
-          <th>市值</th>
-          <th>損益</th>
-          <th>損益%</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tw-tbody">
-        <tr class="loading-row"><td colspan="10">尚無台股持倉，點右上角「+ 台股」新增</td></tr>
+      <thead><tr>
+        <th>股票</th><th>現價</th><th>漲跌%</th>
+        <th>股數</th><th>均價</th><th>成本</th><th>市值</th>
+        <th>損益</th><th>損益%</th><th>操作</th>
+      </tr></thead>
+      <tbody id="tw-body">
+        <tr><td colspan="10" class="empty-hint">尚無台股，點「+ 新增」或「+ 台股」</td></tr>
       </tbody>
     </table>
   </div>
@@ -340,32 +194,20 @@
   <!-- US Stocks -->
   <div class="section">
     <div class="section-header">
-      <div class="section-title">
-        🇺🇸 美股
-        <span class="badge" id="us-count">0 檔</span>
-      </div>
-      <div class="section-summary">
-        <span id="us-summary-value">市值 —</span>
-        <span id="us-summary-pnl">損益 —</span>
+      <div class="section-title">🇺🇸 美股 <span class="badge" id="us-badge">0 檔</span></div>
+      <div class="section-actions">
+        <span class="section-info" id="us-info"></span>
+        <button class="btn btn-sm" onclick="openAddModal('us')">+ 新增</button>
       </div>
     </div>
     <table>
-      <thead>
-        <tr>
-          <th>股票</th>
-          <th>現價(USD)</th>
-          <th>漲跌%</th>
-          <th>股數</th>
-          <th>均價(USD)</th>
-          <th>成本(USD)</th>
-          <th>市值(TWD)</th>
-          <th>損益(USD)</th>
-          <th>損益%</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="us-tbody">
-        <tr class="loading-row"><td colspan="10">尚無美股持倉，點右上角「+ 美股」新增</td></tr>
+      <thead><tr>
+        <th>股票</th><th>現價(USD)</th><th>漲跌%</th>
+        <th>股數</th><th>均價(USD)</th><th>成本(USD)</th><th>市值(TWD)</th>
+        <th>損益(USD)</th><th>損益%</th><th>操作</th>
+      </tr></thead>
+      <tbody id="us-body">
+        <tr><td colspan="10" class="empty-hint">尚無美股，點「+ 新增」或「+ 美股」</td></tr>
       </tbody>
     </table>
   </div>
@@ -373,549 +215,624 @@
   <!-- Bank -->
   <div class="section">
     <div class="section-header">
-      <div class="section-title">
-        🏦 銀行存摺
-        <span class="badge" id="bank-count">0 筆</span>
-      </div>
-      <div class="section-summary">
-        <span id="bank-summary-value">存款 —</span>
+      <div class="section-title">🏦 存摺 <span class="badge" id="bank-badge">0 筆</span></div>
+      <div class="section-actions">
+        <span class="section-info" id="bank-info"></span>
+        <button class="btn btn-sm" onclick="openAddModal('bank')">+ 新增</button>
       </div>
     </div>
     <div class="bank-grid" id="bank-grid">
-      <div class="empty-hint" style="grid-column:1/-1">尚無存款資料，點右上角「+ 存摺」新增</div>
+      <div class="empty-hint" style="grid-column:1/-1">尚無存款資料</div>
+    </div>
+  </div>
+
+  <!-- Transaction Log -->
+  <div class="txn-section">
+    <div class="section-header">
+      <div class="section-title">📋 交易紀錄 <span class="badge" id="txn-badge">0 筆</span></div>
+      <button class="txn-toggle" onclick="toggleTxnLog()">▼ 展開</button>
+    </div>
+    <div id="txn-log">
+      <table>
+        <thead><tr>
+          <th style="text-align:left">日期</th><th style="text-align:left">類型</th>
+          <th style="text-align:left">代號</th><th>股數</th><th>價格</th>
+          <th>金額</th><th>已實現損益</th>
+        </tr></thead>
+        <tbody id="txn-body"></tbody>
+      </table>
     </div>
   </div>
 </main>
 
-<!-- Add/Edit Modal -->
-<div class="modal-overlay" id="modal">
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
   <div class="modal">
-    <h3 id="modal-title">新增持倉</h3>
+    <h3 id="modal-title">—</h3>
     <div id="modal-body"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal()">取消</button>
-      <button class="btn" onclick="saveItem()">儲存</button>
+      <button class="btn" id="modal-save-btn" onclick="saveModal()">儲存</button>
     </div>
   </div>
 </div>
 
 <script>
-// ─── Storage ───────────────────────────────────────────────
-const STORE = {
-  get: k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } },
-  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+// ── Storage helpers ──────────────────────────────────────────
+const S = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)||'null'); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
 };
 
-let twHoldings  = STORE.get('tw_holdings')   || [];
-let usHoldings  = STORE.get('us_holdings')   || [];
-let bankEntries = STORE.get('bank_entries')  || [];
-let assetHistory= STORE.get('asset_history') || [];  // [{date, total}]
-let usdRate     = STORE.get('usd_rate')      || 32.0;
-let chartRange  = 30;
-let chart       = null;
-let editMode    = { type: null, idx: -1 };
+// ── State ────────────────────────────────────────────────────
+// Holdings: [{ticker, name, shares, avgPrice, currency}]
+// Transactions: [{id, date, type:'BUY'|'SELL', market:'TW'|'US', ticker, name, shares, price, realizedPnl}]
+// bankEntries: [{id, bankName, note, amount}]
+// assetHistory: [{date, total}]
 
-// ─── USD/TWD Rate ───────────────────────────────────────────
-async function fetchUsdRate() {
-  try {
-    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?interval=1d&range=1d');
-    const j = await r.json();
-    const p = j.chart.result[0].meta.regularMarketPrice;
-    if (p && p > 0) { usdRate = parseFloat((1/p).toFixed(4)) * 100; }
-    // Actually TWD=X is TWD per USD... let's use USDTWD=X
-  } catch {}
-  try {
-    const r2 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/USDTWD=X?interval=1d&range=1d');
-    const j2 = await r2.json();
-    const p2 = j2.chart.result[0].meta.regularMarketPrice;
-    if (p2 && p2 > 20 && p2 < 50) {
-      usdRate = parseFloat(p2.toFixed(2));
-      STORE.set('usd_rate', usdRate);
-    }
-  } catch {}
-  document.getElementById('usd-rate').textContent = usdRate.toFixed(2);
-}
+let twH  = S.get('tw_h')   || [];
+let usH  = S.get('us_h')   || [];
+let bank = S.get('bank')   || [];
+let txns = S.get('txns')   || [];
+let hist = S.get('hist')   || [];
+let usdRate = S.get('usd_rate') || 32.0;
+let chartRange = 30;
+let myChart = null;
+let _modal = { mode: '', idx: -1 };
 
-// ─── Taiwan Stock Prices (TWSE) ────────────────────────────
-async function fetchTwPrice(ticker) {
-  // ticker like "2330" or "00878"
-  // Try TWSE first (listed stocks)
-  const urls = [
-    `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_${ticker}.tw&json=1&delay=0`,
-    `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=otc_${ticker}.tw&json=1&delay=0`,
+// ── Price fetching ───────────────────────────────────────────
+async function yf(symbol) {
+  const PROXIES = [
+    `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`,
+    `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`,
   ];
-  for (const url of urls) {
+  for (const url of PROXIES) {
     try {
-      const r = await fetch(url);
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) continue;
       const j = await r.json();
-      const d = j.msgArray?.[0];
-      if (d && d.z && d.z !== '-') {
-        const price = parseFloat(d.z);
-        const prev  = parseFloat(d.y || d.z);
-        const chg   = prev > 0 ? ((price - prev) / prev * 100) : 0;
-        const name  = d.n || d.nf || ticker;
-        return { price, chg, name };
-      }
+      const res = j?.chart?.result?.[0];
+      if (!res) continue;
+      const meta = res.meta;
+      const price = meta.regularMarketPrice;
+      if (!price) continue;
+      const prev = meta.chartPreviousClose || meta.previousClose || price;
+      return {
+        price,
+        chg: ((price - prev) / prev * 100),
+        name: meta.shortName || meta.symbol || symbol,
+      };
     } catch {}
   }
-  // Fallback: Yahoo Finance
-  try {
-    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}.TW?interval=1d&range=2d`);
-    const j = await r.json();
-    const meta = j.chart.result[0].meta;
-    const price = meta.regularMarketPrice;
-    const prev  = meta.chartPreviousClose || meta.previousClose || price;
-    const chg   = ((price - prev) / prev * 100);
-    return { price, chg, name: meta.shortName || ticker };
-  } catch {}
   return null;
 }
 
-// ─── US Stock Prices (Yahoo Finance) ───────────────────────
-async function fetchUsPrice(ticker) {
-  // Use Yahoo Finance v8 API (no CORS issue for simple GET)
-  try {
-    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`);
-    const j = await r.json();
-    const meta = j.chart.result[0].meta;
-    const price = meta.regularMarketPrice;
-    const prev  = meta.chartPreviousClose || meta.previousClose || price;
-    const chg   = ((price - prev) / prev * 100);
-    const name  = meta.shortName || ticker;
-    return { price, chg, name };
-  } catch {}
-  // Alternative proxy
-  try {
-    const r = await fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`);
-    const j = await r.json();
-    const meta = j.chart.result[0].meta;
-    const price = meta.regularMarketPrice;
-    const prev  = meta.chartPreviousClose || price;
-    const chg   = ((price - prev) / prev * 100);
-    return { price, chg, name: meta.shortName || ticker };
-  } catch {}
-  return null;
+async function fetchUsdRate() {
+  const d = await yf('USDTWD=X');
+  if (d && d.price > 20 && d.price < 50) {
+    usdRate = parseFloat(d.price.toFixed(2));
+    S.set('usd_rate', usdRate);
+  }
+  document.getElementById('c-rate').textContent = `USD/TWD ${usdRate.toFixed(2)}`;
 }
 
-// ─── Render Taiwan Table ───────────────────────────────────
+async function fetchTwPrice(ticker) { return yf(ticker + '.TW'); }
+async function fetchUsPrice(ticker) { return yf(ticker); }
+
+// ── Render Taiwan ────────────────────────────────────────────
 async function renderTw() {
-  const tbody = document.getElementById('tw-tbody');
-  if (twHoldings.length === 0) {
-    tbody.innerHTML = '<tr class="loading-row"><td colspan="10">尚無台股持倉，點右上角「+ 台股」新增</td></tr>';
-    updateTwSummary(0, 0, 0);
-    return;
+  const tbody = document.getElementById('tw-body');
+  document.getElementById('tw-badge').textContent = `${twH.length} 檔`;
+  if (!twH.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-hint">尚無台股，點「+ 台股」新增</td></tr>';
+    updTwCard(0,0); return 0;
   }
-  // Show loading rows first
-  tbody.innerHTML = twHoldings.map((h, i) => `
-    <tr id="tw-row-${i}">
-      <td><div class="ticker">${h.ticker}</div><div class="name-cell">${h.name || ''}</div></td>
-      <td class="price-loading"><span class="spin"></span></td>
-      <td>—</td>
-      <td>${fmt(h.shares)}</td>
-      <td>${fmtNum(h.avgPrice)}</td>
-      <td>${fmtTwd(h.shares * h.avgPrice)}</td>
-      <td>—</td><td>—</td><td>—</td>
-      <td class="action-cell">
-        <button class="btn btn-outline btn-sm" onclick="openEdit('tw',${i})">編輯</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteItem('tw',${i})">刪</button>
+  tbody.innerHTML = twH.map((h,i) => `
+    <tr id="twr-${i}">
+      <td><div class="ticker">${h.ticker}</div><div class="name-cell">${h.name||''}</div></td>
+      <td><span class="spin"></span></td>
+      <td>—</td><td>${fmt(h.shares)}</td><td>${n2(h.avgPrice)}</td>
+      <td>${twd(h.shares*h.avgPrice)}</td><td>—</td><td>—</td><td>—</td>
+      <td class="act">
+        <button class="btn btn-success btn-sm" onclick="openTrade('BUY','tw',${i})">買</button>
+        <button class="btn btn-danger btn-sm" onclick="openTrade('SELL','tw',${i})">賣</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditHolding('tw',${i})">編</button>
+        <button class="btn btn-danger btn-sm" onclick="delHolding('tw',${i})">刪</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 
-  let totalValue = 0, totalCost = 0;
-  const fetches = twHoldings.map(async (h, i) => {
-    const data = await fetchTwPrice(h.ticker);
-    const row  = document.getElementById(`tw-row-${i}`);
-    if (!row) return 0;
-    const cost  = h.shares * h.avgPrice;
-    if (data && data.price) {
-      const value = h.shares * data.price;
-      const pnl   = value - cost;
-      const pnlPct= cost > 0 ? (pnl / cost * 100) : 0;
-      const chgCls= data.chg >= 0 ? 'pos' : 'neg';
-      const pnlCls= pnl >= 0 ? 'pos' : 'neg';
-      // Update stored name
-      twHoldings[i].name = data.name || twHoldings[i].name;
+  const tasks = twH.map(async (h,i) => {
+    const d = await fetchTwPrice(h.ticker);
+    const row = document.getElementById(`twr-${i}`);
+    if (!row) return {val:0,cost:0};
+    const cost = h.shares * h.avgPrice;
+    if (d?.price) {
+      const val = h.shares * d.price;
+      const pnl = val - cost;
+      const pp  = cost>0 ? pnl/cost*100 : 0;
+      const cc  = d.chg>=0?'pos':'neg', pc=pnl>=0?'pos':'neg';
+      twH[i].name = d.name || twH[i].name;
       row.innerHTML = `
-        <td><div class="ticker">${h.ticker}</div><div class="name-cell">${data.name || h.name}</div></td>
-        <td>${fmtNum(data.price)}</td>
-        <td class="${chgCls}">${data.chg >= 0 ? '+' : ''}${data.chg.toFixed(2)}%</td>
-        <td>${fmt(h.shares)}</td>
-        <td>${fmtNum(h.avgPrice)}</td>
-        <td>${fmtTwd(cost)}</td>
-        <td>${fmtTwd(value)}</td>
-        <td class="${pnlCls}">${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)}</td>
-        <td class="${pnlCls}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</td>
-        <td class="action-cell">
-          <button class="btn btn-outline btn-sm" onclick="openEdit('tw',${i})">編輯</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteItem('tw',${i})">刪</button>
-        </td>
-      `;
-      return { value, cost };
+        <td><div class="ticker">${h.ticker}</div><div class="name-cell">${d.name||h.name}</div></td>
+        <td>${n2(d.price)}</td>
+        <td class="${cc}">${d.chg>=0?'+':''}${d.chg.toFixed(2)}%</td>
+        <td>${fmt(h.shares)}</td><td>${n2(h.avgPrice)}</td>
+        <td>${twd(cost)}</td><td>${twd(val)}</td>
+        <td class="${pc}">${pnl>=0?'+':''}${twd(pnl)}</td>
+        <td class="${pc}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
+        <td class="act">
+          <button class="btn btn-success btn-sm" onclick="openTrade('BUY','tw',${i})">買</button>
+          <button class="btn btn-danger btn-sm" onclick="openTrade('SELL','tw',${i})">賣</button>
+          <button class="btn btn-outline btn-sm" onclick="openEditHolding('tw',${i})">編</button>
+          <button class="btn btn-danger btn-sm" onclick="delHolding('tw',${i})">刪</button>
+        </td>`;
+      return {val, cost};
     } else {
-      row.cells[1].textContent = '取得失敗';
-      return { value: cost, cost };
+      row.cells[1].innerHTML = '<span class="price-err">無法取得</span>';
+      return {val:cost, cost};
     }
   });
-
-  const results = await Promise.all(fetches);
-  totalValue = results.reduce((s, r) => s + (r?.value || 0), 0);
-  totalCost  = results.reduce((s, r) => s + (r?.cost  || 0), 0);
-  STORE.set('tw_holdings', twHoldings);
-  updateTwSummary(totalValue, totalCost, twHoldings.length);
-  return totalValue;
+  const res = await Promise.all(tasks);
+  const tv = res.reduce((s,r)=>s+(r?.val||0),0);
+  const tc = res.reduce((s,r)=>s+(r?.cost||0),0);
+  S.set('tw_h', twH);
+  updTwCard(tv, tc);
+  return tv;
 }
 
-function updateTwSummary(value, cost, count) {
-  const pnl    = value - cost;
-  const pnlPct = cost > 0 ? (pnl / cost * 100) : 0;
-  document.getElementById('tw-count').textContent = `${count} 檔`;
-  document.getElementById('tw-summary-value').textContent = `市值 ${fmtTwd(value)}`;
-  document.getElementById('tw-summary-pnl').textContent = `損益 ${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
-  document.getElementById('tw-total').textContent = fmtTwd(value);
-  document.getElementById('tw-total').className = 'card-value';
-  document.getElementById('tw-pnl-sub').textContent = `損益 ${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)} (${pnlPct.toFixed(2)}%)`;
-  document.getElementById('tw-pnl-sub').className = pnl >= 0 ? 'card-sub pos' : 'card-sub neg';
+function updTwCard(v, c) {
+  const p=v-c, pp=c>0?p/c*100:0;
+  document.getElementById('c-tw').textContent = twd(v);
+  document.getElementById('c-tw-sub').textContent =
+    v>0 ? `損益 ${p>=0?'+':''}${twd(p)} (${pp.toFixed(2)}%)` : '—';
+  document.getElementById('c-tw-sub').className = `card-sub ${p>=0?'pos':'neg'}`;
+  document.getElementById('tw-info').textContent =
+    v>0 ? `市值 ${twd(v)} ／ 損益 ${p>=0?'+':''}${pp.toFixed(2)}%` : '';
 }
 
-// ─── Render US Table ───────────────────────────────────────
+// ── Render US ────────────────────────────────────────────────
 async function renderUs() {
-  const tbody = document.getElementById('us-tbody');
-  if (usHoldings.length === 0) {
-    tbody.innerHTML = '<tr class="loading-row"><td colspan="10">尚無美股持倉，點右上角「+ 美股」新增</td></tr>';
-    updateUsSummary(0, 0, 0);
-    return;
+  const tbody = document.getElementById('us-body');
+  document.getElementById('us-badge').textContent = `${usH.length} 檔`;
+  if (!usH.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-hint">尚無美股，點「+ 美股」新增</td></tr>';
+    updUsCard(0,0); return 0;
   }
-  tbody.innerHTML = usHoldings.map((h, i) => `
-    <tr id="us-row-${i}">
-      <td><div class="ticker">${h.ticker}</div><div class="name-cell">${h.name || ''}</div></td>
-      <td class="price-loading"><span class="spin"></span></td>
-      <td>—</td>
-      <td>${h.shares}</td>
-      <td>$${fmtNum(h.avgPrice)}</td>
-      <td>$${fmtNum(h.shares * h.avgPrice)}</td>
-      <td>—</td><td>—</td><td>—</td>
-      <td class="action-cell">
-        <button class="btn btn-outline btn-sm" onclick="openEdit('us',${i})">編輯</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteItem('us',${i})">刪</button>
+  tbody.innerHTML = usH.map((h,i) => `
+    <tr id="usr-${i}">
+      <td><div class="ticker">${h.ticker}</div><div class="name-cell">${h.name||''}</div></td>
+      <td><span class="spin"></span></td>
+      <td>—</td><td>${h.shares}</td><td>$${n2(h.avgPrice)}</td>
+      <td>$${n2(h.shares*h.avgPrice)}</td><td>—</td><td>—</td><td>—</td>
+      <td class="act">
+        <button class="btn btn-success btn-sm" onclick="openTrade('BUY','us',${i})">買</button>
+        <button class="btn btn-danger btn-sm" onclick="openTrade('SELL','us',${i})">賣</button>
+        <button class="btn btn-outline btn-sm" onclick="openEditHolding('us',${i})">編</button>
+        <button class="btn btn-danger btn-sm" onclick="delHolding('us',${i})">刪</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 
-  const fetches = usHoldings.map(async (h, i) => {
-    const data = await fetchUsPrice(h.ticker);
-    const row  = document.getElementById(`us-row-${i}`);
-    if (!row) return { valueTwd: 0, cost: 0 };
-    const cost     = h.shares * h.avgPrice;
-    const costTwd  = cost * usdRate;
-    if (data && data.price) {
-      const value    = h.shares * data.price;
-      const valueTwd = value * usdRate;
-      const pnl      = value - cost;
-      const pnlTwd   = pnl * usdRate;
-      const pnlPct   = cost > 0 ? (pnl / cost * 100) : 0;
-      const chgCls   = data.chg >= 0 ? 'pos' : 'neg';
-      const pnlCls   = pnl >= 0 ? 'pos' : 'neg';
-      usHoldings[i].name = data.name || usHoldings[i].name;
+  const tasks = usH.map(async (h,i) => {
+    const d = await fetchUsPrice(h.ticker);
+    const row = document.getElementById(`usr-${i}`);
+    if (!row) return {val:0,cost:0};
+    const cost=h.shares*h.avgPrice, costTwd=cost*usdRate;
+    if (d?.price) {
+      const val=h.shares*d.price, valTwd=val*usdRate;
+      const pnl=val-cost, pp=cost>0?pnl/cost*100:0;
+      const cc=d.chg>=0?'pos':'neg', pc=pnl>=0?'pos':'neg';
+      usH[i].name = d.name || usH[i].name;
       row.innerHTML = `
-        <td><div class="ticker">${h.ticker}</div><div class="name-cell">${data.name || h.name}</div></td>
-        <td>$${fmtNum(data.price)}</td>
-        <td class="${chgCls}">${data.chg >= 0 ? '+' : ''}${data.chg.toFixed(2)}%</td>
-        <td>${h.shares}</td>
-        <td>$${fmtNum(h.avgPrice)}</td>
-        <td>$${fmtNum(cost)}</td>
-        <td>${fmtTwd(valueTwd)}</td>
-        <td class="${pnlCls}">$${pnl >= 0 ? '+' : ''}${fmtNum(pnl)}</td>
-        <td class="${pnlCls}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</td>
-        <td class="action-cell">
-          <button class="btn btn-outline btn-sm" onclick="openEdit('us',${i})">編輯</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteItem('us',${i})">刪</button>
-        </td>
-      `;
-      return { valueTwd, cost: costTwd };
+        <td><div class="ticker">${h.ticker}</div><div class="name-cell">${d.name||h.name}</div></td>
+        <td>$${n2(d.price)}</td>
+        <td class="${cc}">${d.chg>=0?'+':''}${d.chg.toFixed(2)}%</td>
+        <td>${h.shares}</td><td>$${n2(h.avgPrice)}</td>
+        <td>$${n2(cost)}</td><td>${twd(valTwd)}</td>
+        <td class="${pc}">$${pnl>=0?'+':''}${n2(pnl)}</td>
+        <td class="${pc}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
+        <td class="act">
+          <button class="btn btn-success btn-sm" onclick="openTrade('BUY','us',${i})">買</button>
+          <button class="btn btn-danger btn-sm" onclick="openTrade('SELL','us',${i})">賣</button>
+          <button class="btn btn-outline btn-sm" onclick="openEditHolding('us',${i})">編</button>
+          <button class="btn btn-danger btn-sm" onclick="delHolding('us',${i})">刪</button>
+        </td>`;
+      return {val:valTwd, cost:costTwd};
     } else {
-      row.cells[1].textContent = '取得失敗';
-      return { valueTwd: costTwd, cost: costTwd };
+      row.cells[1].innerHTML = '<span class="price-err">無法取得</span>';
+      return {val:costTwd, cost:costTwd};
     }
   });
-
-  const results = await Promise.all(fetches);
-  const totalValueTwd = results.reduce((s, r) => s + (r?.valueTwd || 0), 0);
-  const totalCostTwd  = results.reduce((s, r) => s + (r?.cost     || 0), 0);
-  STORE.set('us_holdings', usHoldings);
-  updateUsSummary(totalValueTwd, totalCostTwd, usHoldings.length);
-  return totalValueTwd;
+  const res = await Promise.all(tasks);
+  const tv = res.reduce((s,r)=>s+(r?.val||0),0);
+  const tc = res.reduce((s,r)=>s+(r?.cost||0),0);
+  S.set('us_h', usH);
+  updUsCard(tv, tc);
+  return tv;
 }
 
-function updateUsSummary(valueTwd, costTwd, count) {
-  const pnl    = valueTwd - costTwd;
-  const pnlPct = costTwd > 0 ? (pnl / costTwd * 100) : 0;
-  document.getElementById('us-count').textContent = `${count} 檔`;
-  document.getElementById('us-summary-value').textContent = `市值 ${fmtTwd(valueTwd)}`;
-  document.getElementById('us-summary-pnl').textContent = `損益 ${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
-  document.getElementById('us-total').textContent = fmtTwd(valueTwd);
-  document.getElementById('us-pnl-sub').textContent = `損益 ${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)} (${pnlPct.toFixed(2)}%)`;
-  document.getElementById('us-pnl-sub').className = pnl >= 0 ? 'card-sub pos' : 'card-sub neg';
+function updUsCard(v, c) {
+  const p=v-c, pp=c>0?p/c*100:0;
+  document.getElementById('c-us').textContent = twd(v);
+  document.getElementById('c-us-sub').textContent =
+    v>0 ? `損益 ${p>=0?'+':''}${twd(p)} (${pp.toFixed(2)}%)` : '—';
+  document.getElementById('c-us-sub').className = `card-sub ${p>=0?'pos':'neg'}`;
+  document.getElementById('us-info').textContent =
+    v>0 ? `市值 ${twd(v)} ／ 損益 ${p>=0?'+':''}${pp.toFixed(2)}%` : '';
 }
 
-// ─── Render Bank ───────────────────────────────────────────
+// ── Render Bank ──────────────────────────────────────────────
 function renderBank() {
   const grid = document.getElementById('bank-grid');
-  const total = bankEntries.reduce((s, b) => s + b.amount, 0);
-  document.getElementById('bank-count').textContent = `${bankEntries.length} 筆`;
-  document.getElementById('bank-summary-value').textContent = `存款 ${fmtTwd(total)}`;
-  document.getElementById('bank-total').textContent = fmtTwd(total);
-
-  if (bankEntries.length === 0) {
-    grid.innerHTML = '<div class="empty-hint" style="grid-column:1/-1">尚無存款資料，點右上角「+ 存摺」新增</div>';
-    return;
+  const total = bank.reduce((s,b)=>s+b.amount,0);
+  document.getElementById('bank-badge').textContent = `${bank.length} 筆`;
+  document.getElementById('c-bank').textContent = twd(total);
+  document.getElementById('bank-info').textContent = bank.length ? `合計 ${twd(total)}` : '';
+  if (!bank.length) {
+    grid.innerHTML = '<div class="empty-hint" style="grid-column:1/-1">尚無存款資料</div>';
+    return 0;
   }
-  grid.innerHTML = bankEntries.map((b, i) => `
+  grid.innerHTML = bank.map((b,i) => `
     <div class="bank-card">
-      <div class="bank-info">
-        <div class="bank-name">${b.bankName}</div>
-        <div class="bank-note">${b.note || '活存'}</div>
-      </div>
       <div>
-        <div class="bank-amount">${fmtTwd(b.amount)}</div>
-        <div class="bank-actions">
-          <button class="btn btn-outline btn-sm" onclick="openEdit('bank',${i})">編</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteItem('bank',${i})">刪</button>
+        <div class="bank-name">${b.bankName}</div>
+        <div class="bank-note">${b.note||'活存'}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="bank-amount">${twd(b.amount)}</div>
+        <div class="bank-acts">
+          <button class="btn btn-outline btn-sm" onclick="openEditBank(${i})">編</button>
+          <button class="btn btn-danger btn-sm" onclick="delBank(${i})">刪</button>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
   return total;
 }
 
-// ─── Summary Cards ─────────────────────────────────────────
-function updateTotals(twValue, usValue, bankValue) {
-  const total    = (twValue || 0) + (usValue || 0) + (bankValue || 0);
-  const twCost   = twHoldings.reduce((s, h) => s + h.shares * h.avgPrice, 0);
-  const usCostTwd= usHoldings.reduce((s, h) => s + h.shares * h.avgPrice * usdRate, 0);
-  const totalCost= twCost + usCostTwd;
-  const pnl      = total - totalCost - (bankValue || 0);
-  const pnlPct   = totalCost > 0 ? (pnl / totalCost * 100) : 0;
+// ── Transaction Log ──────────────────────────────────────────
+function renderTxns() {
+  document.getElementById('txn-badge').textContent = `${txns.length} 筆`;
+  const tbody = document.getElementById('txn-body');
+  if (!txns.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-hint">尚無交易紀錄</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [...txns].reverse().map(t => {
+    const amount = t.shares * t.price;
+    const cur = t.market === 'US' ? 'USD' : 'TWD';
+    const rp = t.realizedPnl != null
+      ? `<span class="${t.realizedPnl>=0?'pos':'neg'}">${t.realizedPnl>=0?'+':''}${n2(t.realizedPnl)}</span>`
+      : '—';
+    return `<tr>
+      <td style="text-align:left">${t.date}</td>
+      <td style="text-align:left"><b style="color:${t.type==='BUY'?'var(--green)':'var(--red)'}">${t.type==='BUY'?'買進':'賣出'}</b></td>
+      <td style="text-align:left"><span class="ticker">${t.ticker}</span> <span class="name-cell">${t.name||''}</span></td>
+      <td>${fmt(t.shares)}</td>
+      <td>${n2(t.price)} ${cur}</td>
+      <td>${n2(amount)} ${cur}</td>
+      <td>${rp} ${t.realizedPnl!=null?cur:''}</td>
+    </tr>`;
+  }).join('');
+}
 
-  document.getElementById('total-assets').textContent = fmtTwd(total);
-  document.getElementById('total-pnl').textContent    = `${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)}`;
-  document.getElementById('total-pnl').className      = `card-value ${pnl >= 0 ? 'pos' : 'neg'}`;
-  document.getElementById('pnl-sub').textContent      = `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}% 含投資部位`;
+function toggleTxnLog() {
+  const el = document.getElementById('txn-log');
+  const btn = document.querySelector('.txn-toggle');
+  const open = el.style.display === 'block';
+  el.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '▼ 展開' : '▲ 收起';
+}
 
-  // Save daily snapshot
-  const today = new Date().toISOString().slice(0, 10);
-  const last  = assetHistory[assetHistory.length - 1];
+// ── Totals & Chart ───────────────────────────────────────────
+function updateTotals(twVal, usVal, bankVal) {
+  const total = (twVal||0) + (usVal||0) + (bankVal||0);
+  const twCost = twH.reduce((s,h)=>s+h.shares*h.avgPrice, 0);
+  const usCostTwd = usH.reduce((s,h)=>s+h.shares*h.avgPrice*usdRate, 0);
+  const investCost = twCost + usCostTwd;
+  const investVal  = (twVal||0) + (usVal||0);
+  const upnl = investVal - investCost;
+  const upnlPct = investCost > 0 ? upnl/investCost*100 : 0;
+
+  // Realized PnL from transactions
+  const rpnl = txns.reduce((s,t) => s + (t.realizedPnl||0) * (t.market==='US' ? usdRate : 1), 0);
+
+  document.getElementById('c-total').textContent = twd(total);
+  document.getElementById('c-upnl').textContent = (upnl>=0?'+':'') + twd(upnl);
+  document.getElementById('c-upnl').className = `card-value ${upnl>=0?'pos':'neg'}`;
+  document.getElementById('c-upnl-pct').textContent = `${upnlPct>=0?'+':''}${upnlPct.toFixed(2)}% 含投資部位`;
+  document.getElementById('c-rpnl').textContent = (rpnl>=0?'+':'') + twd(rpnl);
+  document.getElementById('c-rpnl').className = `card-value ${rpnl>=0?'pos':'neg'}`;
+
+  // History snapshot
+  const today = new Date().toISOString().slice(0,10);
   if (total > 0) {
-    if (!last || last.date !== today) {
-      assetHistory.push({ date: today, total: Math.round(total) });
-      if (assetHistory.length > 365) assetHistory.shift();
-      STORE.set('asset_history', assetHistory);
-    } else {
-      last.total = Math.round(total);
-      STORE.set('asset_history', assetHistory);
-    }
+    const last = hist[hist.length-1];
+    if (!last || last.date !== today) hist.push({date:today, total:Math.round(total)});
+    else last.total = Math.round(total);
+    if (hist.length > 365) hist.shift();
+    S.set('hist', hist);
     renderChart();
   }
 }
 
-// ─── Chart ─────────────────────────────────────────────────
 function renderChart() {
-  const now    = new Date();
-  let filtered = assetHistory;
+  const now = new Date();
+  let pts = hist;
   if (chartRange < 9999) {
-    const cutoff = new Date(now - chartRange * 86400000).toISOString().slice(0, 10);
-    filtered = assetHistory.filter(p => p.date >= cutoff);
+    const cut = new Date(now - chartRange*86400000).toISOString().slice(0,10);
+    pts = hist.filter(p => p.date >= cut);
   }
-
-  const labels = filtered.map(p => p.date.slice(5));
-  const data   = filtered.map(p => p.total);
-
-  if (chart) chart.destroy();
-  const ctx = document.getElementById('asset-chart').getContext('2d');
-  const grad = ctx.createLinearGradient(0, 0, 0, 200);
-  grad.addColorStop(0, 'rgba(88,166,255,0.25)');
-  grad.addColorStop(1, 'rgba(88,166,255,0)');
-
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        borderColor: '#58a6ff',
-        backgroundColor: grad,
-        borderWidth: 2,
-        pointRadius: data.length <= 30 ? 3 : 0,
-        pointHoverRadius: 5,
-        fill: true,
-        tension: 0.3,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `NT$ ${ctx.raw.toLocaleString()}`
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: '#21262d' },
-          ticks: { color: '#8b949e', maxTicksLimit: 8 }
-        },
-        y: {
-          grid: { color: '#21262d' },
-          ticks: {
-            color: '#8b949e',
-            callback: v => 'NT$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : (v/1000).toFixed(0)+'K')
-          }
-        }
+  if (!pts.length) return;
+  const labels = pts.map(p=>p.date.slice(5));
+  const data   = pts.map(p=>p.total);
+  if (myChart) myChart.destroy();
+  const ctx = document.getElementById('chart').getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,190);
+  grad.addColorStop(0,'rgba(88,166,255,.22)');
+  grad.addColorStop(1,'rgba(88,166,255,0)');
+  myChart = new Chart(ctx, {
+    type:'line',
+    data:{labels, datasets:[{data, borderColor:'#58a6ff', backgroundColor:grad,
+      borderWidth:2, pointRadius:data.length<=30?3:0, pointHoverRadius:5, fill:true, tension:.3}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>`NT$ ${c.raw.toLocaleString()}`}}},
+      scales:{
+        x:{grid:{color:'#21262d'}, ticks:{color:'#8b949e', maxTicksLimit:8}},
+        y:{grid:{color:'#21262d'}, ticks:{color:'#8b949e',
+          callback:v=>'NT$'+(v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K')}}
       }
     }
   });
 }
 
-function setRange(btn, range) {
-  chartRange = range;
-  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+function setRange(btn, r) {
+  chartRange = r;
+  document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderChart();
 }
 
-// ─── Refresh All ───────────────────────────────────────────
+// ── Refresh ──────────────────────────────────────────────────
 async function refreshAll() {
   document.getElementById('last-update').textContent = '更新中…';
   await fetchUsdRate();
   const [twVal, usVal] = await Promise.all([renderTw(), renderUs()]);
   const bankVal = renderBank();
+  renderTxns();
   updateTotals(twVal, usVal, bankVal);
   document.getElementById('last-update').textContent =
-    '更新時間 ' + new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    '更新 ' + new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 
-// ─── Modal ─────────────────────────────────────────────────
-function openModal(type, idx = -1) {
-  editMode = { type, idx };
-  const modal   = document.getElementById('modal');
-  const title   = document.getElementById('modal-title');
-  const body    = document.getElementById('modal-body');
-  modal.classList.add('open');
+// ── Modal helpers ────────────────────────────────────────────
+function openModal(title, body, saveBtnText='儲存') {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-save-btn').textContent = saveBtnText;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
 
+// ── Add Holding Modal ────────────────────────────────────────
+function openAddModal(type) {
+  _modal = { mode: type+'-add', idx: -1 };
   if (type === 'tw') {
-    const h = idx >= 0 ? twHoldings[idx] : {};
-    title.textContent = idx >= 0 ? '編輯台股' : '新增台股';
-    body.innerHTML = `
-      <div class="form-group"><label>股票代號（如 2330）</label>
-        <input id="f-ticker" value="${h.ticker || ''}" placeholder="2330"></div>
-      <div class="form-group"><label>名稱（可留空自動取得）</label>
-        <input id="f-name" value="${h.name || ''}" placeholder="台積電"></div>
-      <div class="form-group"><label>持股張數或股數（輸入股數）</label>
-        <input id="f-shares" type="number" value="${h.shares || ''}" placeholder="1000"></div>
-      <div class="form-group"><label>均價（TWD）</label>
-        <input id="f-avg" type="number" step="0.01" value="${h.avgPrice || ''}" placeholder="950.00"></div>
-    `;
+    openModal('新增台股', `
+      <div class="fg"><label>股票代號（如 2330）</label><input id="f-ticker" placeholder="2330"></div>
+      <div class="fg"><label>名稱（可留空自動抓）</label><input id="f-name" placeholder="台積電"></div>
+      <div class="row2">
+        <div class="fg"><label>股數</label><input id="f-shares" type="number" placeholder="1000"></div>
+        <div class="fg"><label>均價（TWD）</label><input id="f-avg" type="number" step="0.01" placeholder="950"></div>
+      </div>`);
   } else if (type === 'us') {
-    const h = idx >= 0 ? usHoldings[idx] : {};
-    title.textContent = idx >= 0 ? '編輯美股' : '新增美股';
-    body.innerHTML = `
-      <div class="form-group"><label>股票代號（如 NVDA）</label>
-        <input id="f-ticker" value="${h.ticker || ''}" placeholder="NVDA"></div>
-      <div class="form-group"><label>名稱（可留空自動取得）</label>
-        <input id="f-name" value="${h.name || ''}" placeholder="NVIDIA"></div>
-      <div class="form-group"><label>股數</label>
-        <input id="f-shares" type="number" step="0.001" value="${h.shares || ''}" placeholder="10"></div>
-      <div class="form-group"><label>均價（USD）</label>
-        <input id="f-avg" type="number" step="0.01" value="${h.avgPrice || ''}" placeholder="500.00"></div>
-    `;
-  } else if (type === 'bank') {
-    const h = idx >= 0 ? bankEntries[idx] : {};
-    title.textContent = idx >= 0 ? '編輯存摺' : '新增存摺';
-    body.innerHTML = `
-      <div class="form-group"><label>銀行名稱</label>
-        <input id="f-bank" value="${h.bankName || ''}" placeholder="台灣銀行"></div>
-      <div class="form-group"><label>備註（活存/定存/外幣）</label>
-        <input id="f-note" value="${h.note || ''}" placeholder="活存"></div>
-      <div class="form-group"><label>金額（TWD）</label>
-        <input id="f-amount" type="number" value="${h.amount || ''}" placeholder="500000"></div>
-    `;
+    openModal('新增美股', `
+      <div class="fg"><label>股票代號（如 NVDA）</label><input id="f-ticker" placeholder="NVDA"></div>
+      <div class="fg"><label>名稱（可留空自動抓）</label><input id="f-name" placeholder="NVIDIA"></div>
+      <div class="row2">
+        <div class="fg"><label>股數</label><input id="f-shares" type="number" step="0.001" placeholder="10"></div>
+        <div class="fg"><label>均價（USD）</label><input id="f-avg" type="number" step="0.01" placeholder="500"></div>
+      </div>`);
+  } else {
+    openModal('新增存摺', `
+      <div class="fg"><label>銀行名稱</label><input id="f-bank" placeholder="台灣銀行"></div>
+      <div class="fg"><label>備註</label><input id="f-note" placeholder="活存 / 定存 / 外幣"></div>
+      <div class="fg"><label>金額（TWD）</label><input id="f-amount" type="number" placeholder="500000"></div>`);
   }
 }
 
-function openEdit(type, idx) { openModal(type, idx); }
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
+// ── Edit Holding Modal ────────────────────────────────────────
+function openEditHolding(market, idx) {
+  _modal = { mode: market+'-edit', idx };
+  const h = market === 'tw' ? twH[idx] : usH[idx];
+  const cur = market === 'tw' ? 'TWD' : 'USD';
+  openModal(`編輯 ${h.ticker}`, `
+    <div class="fg"><label>股票代號</label><input id="f-ticker" value="${h.ticker}"></div>
+    <div class="fg"><label>名稱</label><input id="f-name" value="${h.name||''}"></div>
+    <div class="row2">
+      <div class="fg"><label>股數</label><input id="f-shares" type="number" step="0.001" value="${h.shares}"></div>
+      <div class="fg"><label>均價（${cur}）</label><input id="f-avg" type="number" step="0.01" value="${h.avgPrice}"></div>
+    </div>`);
 }
 
-function saveItem() {
-  const { type, idx } = editMode;
-  if (type === 'tw') {
-    const ticker = document.getElementById('f-ticker').value.trim().toUpperCase();
-    const name   = document.getElementById('f-name').value.trim();
-    const shares = parseFloat(document.getElementById('f-shares').value);
-    const avg    = parseFloat(document.getElementById('f-avg').value);
-    if (!ticker || !shares || !avg) return alert('請填寫所有必填欄位');
-    const item = { ticker, name, shares, avgPrice: avg };
-    if (idx >= 0) twHoldings[idx] = item; else twHoldings.push(item);
-    STORE.set('tw_holdings', twHoldings);
-  } else if (type === 'us') {
-    const ticker = document.getElementById('f-ticker').value.trim().toUpperCase();
-    const name   = document.getElementById('f-name').value.trim();
-    const shares = parseFloat(document.getElementById('f-shares').value);
-    const avg    = parseFloat(document.getElementById('f-avg').value);
-    if (!ticker || !shares || !avg) return alert('請填寫所有必填欄位');
-    const item = { ticker, name, shares, avgPrice: avg };
-    if (idx >= 0) usHoldings[idx] = item; else usHoldings.push(item);
-    STORE.set('us_holdings', usHoldings);
-  } else if (type === 'bank') {
-    const bankName = document.getElementById('f-bank').value.trim();
-    const note     = document.getElementById('f-note').value.trim();
-    const amount   = parseFloat(document.getElementById('f-amount').value);
+// ── Edit Bank Modal ───────────────────────────────────────────
+function openEditBank(idx) {
+  _modal = { mode: 'bank-edit', idx };
+  const b = bank[idx];
+  openModal('編輯存摺', `
+    <div class="fg"><label>銀行名稱</label><input id="f-bank" value="${b.bankName}"></div>
+    <div class="fg"><label>備註</label><input id="f-note" value="${b.note||''}"></div>
+    <div class="fg"><label>金額（TWD）</label><input id="f-amount" type="number" value="${b.amount}"></div>`);
+}
+
+// ── Trade Modal (BUY / SELL) ─────────────────────────────────
+function openTrade(type, market, idx) {
+  _modal = { mode: 'trade', tradeType: type, market, idx };
+  const h = market === 'tw' ? twH[idx] : usH[idx];
+  const cur = market === 'tw' ? 'TWD' : 'USD';
+  const label = type === 'BUY' ? '買進' : '賣出';
+  const color = type === 'BUY' ? 'var(--green)' : 'var(--red)';
+  document.getElementById('modal-save-btn').style.background = color;
+
+  const info = type === 'SELL'
+    ? `<div class="info-box">目前持有 <b>${fmt(h.shares)}</b> 股，均價 <b>${n2(h.avgPrice)} ${cur}</b><br>成本 <b>${n2(h.shares*h.avgPrice)} ${cur}</b></div>`
+    : `<div class="info-box">現有持股 <b>${fmt(h.shares)}</b> 股，均價 <b>${n2(h.avgPrice)} ${cur}</b></div>`;
+
+  openModal(`${label}｜${h.ticker} ${h.name||''}`, `
+    ${info}
+    <div class="row2">
+      <div class="fg"><label>${label}股數</label>
+        <input id="f-shares" type="number" step="${market==='us'?'0.001':'1'}" placeholder="0" ${type==='SELL'?`max="${h.shares}"`:''}>
+      </div>
+      <div class="fg"><label>${label}價格（${cur}）</label>
+        <input id="f-price" type="number" step="0.01" placeholder="0">
+      </div>
+    </div>
+    <div class="fg"><label>日期</label>
+      <input id="f-date" type="date" value="${new Date().toISOString().slice(0,10)}">
+    </div>
+    <div id="trade-preview" style="margin-top:6px;font-size:12px;color:var(--text2);">填入股數與價格後自動計算</div>`,
+    label
+  );
+
+  // Live preview
+  setTimeout(() => {
+    ['f-shares','f-price'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', updateTradePreview);
+    });
+  }, 50);
+}
+
+function updateTradePreview() {
+  const { market, idx, tradeType } = _modal;
+  const h = market === 'tw' ? twH[idx] : usH[idx];
+  const shares = parseFloat(document.getElementById('f-shares')?.value) || 0;
+  const price  = parseFloat(document.getElementById('f-price')?.value)  || 0;
+  const cur = market === 'tw' ? 'TWD' : 'USD';
+  const prev = document.getElementById('trade-preview');
+  if (!prev || !shares || !price) return;
+  const amount = shares * price;
+  if (tradeType === 'BUY') {
+    const newShares = h.shares + shares;
+    const newCost   = h.shares * h.avgPrice + amount;
+    const newAvg    = newCost / newShares;
+    prev.innerHTML = `交易金額 <b>${n2(amount)} ${cur}</b>　買後均價 <b>${n2(newAvg)} ${cur}</b>　持股 <b>${fmt(newShares)}</b>`;
+  } else {
+    const realized = (price - h.avgPrice) * shares;
+    const cls = realized>=0?'pos':'neg';
+    prev.innerHTML = `交易金額 <b>${n2(amount)} ${cur}</b>　實現損益 <b class="${cls}">${realized>=0?'+':''}${n2(realized)} ${cur}</b>`;
+  }
+}
+
+// ── Save Modal ────────────────────────────────────────────────
+function saveModal() {
+  const { mode } = _modal;
+
+  if (mode === 'tw-add' || mode === 'us-add') {
+    const ticker = (document.getElementById('f-ticker')?.value||'').trim().toUpperCase();
+    const name   = (document.getElementById('f-name')?.value||'').trim();
+    const shares = parseFloat(document.getElementById('f-shares')?.value);
+    const avg    = parseFloat(document.getElementById('f-avg')?.value);
+    if (!ticker || !shares || !avg) return alert('請填寫代號、股數與均價');
+    const arr = mode.startsWith('tw') ? twH : usH;
+    const key = mode.startsWith('tw') ? 'tw_h' : 'us_h';
+    arr.push({ ticker, name, shares, avgPrice: avg });
+    S.set(key, arr);
+
+  } else if (mode === 'tw-edit' || mode === 'us-edit') {
+    const { idx } = _modal;
+    const ticker = (document.getElementById('f-ticker')?.value||'').trim().toUpperCase();
+    const name   = (document.getElementById('f-name')?.value||'').trim();
+    const shares = parseFloat(document.getElementById('f-shares')?.value);
+    const avg    = parseFloat(document.getElementById('f-avg')?.value);
+    if (!ticker || !shares || !avg) return alert('請填寫代號、股數與均價');
+    const arr = mode.startsWith('tw') ? twH : usH;
+    const key = mode.startsWith('tw') ? 'tw_h' : 'us_h';
+    arr[idx] = { ticker, name, shares, avgPrice: avg };
+    S.set(key, arr);
+
+  } else if (mode === 'bank-add') {
+    const bankName = (document.getElementById('f-bank')?.value||'').trim();
+    const note     = (document.getElementById('f-note')?.value||'').trim();
+    const amount   = parseFloat(document.getElementById('f-amount')?.value);
     if (!bankName || !amount) return alert('請填寫銀行名稱與金額');
-    const item = { bankName, note, amount };
-    if (idx >= 0) bankEntries[idx] = item; else bankEntries.push(item);
-    STORE.set('bank_entries', bankEntries);
+    bank.push({ id: Date.now(), bankName, note, amount });
+    S.set('bank', bank);
+
+  } else if (mode === 'bank-edit') {
+    const { idx } = _modal;
+    const bankName = (document.getElementById('f-bank')?.value||'').trim();
+    const note     = (document.getElementById('f-note')?.value||'').trim();
+    const amount   = parseFloat(document.getElementById('f-amount')?.value);
+    if (!bankName || !amount) return alert('請填寫銀行名稱與金額');
+    bank[idx] = { ...bank[idx], bankName, note, amount };
+    S.set('bank', bank);
+
+  } else if (mode === 'trade') {
+    const { tradeType, market, idx } = _modal;
+    const arr = market === 'tw' ? twH : usH;
+    const key = market === 'tw' ? 'tw_h' : 'us_h';
+    const h   = arr[idx];
+    const shares = parseFloat(document.getElementById('f-shares')?.value);
+    const price  = parseFloat(document.getElementById('f-price')?.value);
+    const date   = document.getElementById('f-date')?.value || new Date().toISOString().slice(0,10);
+    if (!shares || shares <= 0 || !price || price <= 0) return alert('請填寫股數與價格');
+
+    if (tradeType === 'BUY') {
+      const newShares = h.shares + shares;
+      const newAvg    = (h.shares * h.avgPrice + shares * price) / newShares;
+      arr[idx].shares   = parseFloat(newShares.toFixed(6));
+      arr[idx].avgPrice = parseFloat(newAvg.toFixed(6));
+      txns.push({
+        id: Date.now(), date, type: 'BUY', market: market.toUpperCase(),
+        ticker: h.ticker, name: h.name||'', shares, price, realizedPnl: null
+      });
+    } else {
+      if (shares > h.shares) return alert(`超過持有股數 ${fmt(h.shares)}`);
+      const realized = (price - h.avgPrice) * shares;
+      const newShares = parseFloat((h.shares - shares).toFixed(6));
+      if (newShares <= 0.0001) arr.splice(idx, 1);
+      else arr[idx].shares = newShares;
+      txns.push({
+        id: Date.now(), date, type: 'SELL', market: market.toUpperCase(),
+        ticker: h.ticker, name: h.name||'', shares, price, realizedPnl: parseFloat(realized.toFixed(4))
+      });
+    }
+    S.set(key, arr);
+    S.set('txns', txns);
   }
+
   closeModal();
   refreshAll();
 }
 
-function deleteItem(type, idx) {
-  if (!confirm('確定刪除？')) return;
-  if (type === 'tw')   { twHoldings.splice(idx, 1);  STORE.set('tw_holdings', twHoldings); }
-  if (type === 'us')   { usHoldings.splice(idx, 1);  STORE.set('us_holdings', usHoldings); }
-  if (type === 'bank') { bankEntries.splice(idx, 1); STORE.set('bank_entries', bankEntries); }
+// ── Delete helpers ────────────────────────────────────────────
+function delHolding(market, idx) {
+  if (!confirm('確定刪除此持倉？交易紀錄不會刪除。')) return;
+  if (market === 'tw') { twH.splice(idx,1); S.set('tw_h',twH); }
+  else                 { usH.splice(idx,1); S.set('us_h',usH); }
   refreshAll();
 }
-
-// Close modal on overlay click
-document.getElementById('modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal')) closeModal();
-});
-
-// ─── Formatters ────────────────────────────────────────────
-function fmtTwd(v) {
-  if (!v && v !== 0) return '—';
-  return 'NT$' + Math.round(v).toLocaleString();
-}
-function fmtNum(v) {
-  if (!v && v !== 0) return '—';
-  return parseFloat(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fmt(v) {
-  return v ? parseFloat(v).toLocaleString() : '—';
+function delBank(idx) {
+  if (!confirm('確定刪除？')) return;
+  bank.splice(idx,1); S.set('bank',bank); refreshAll();
 }
 
-// ─── Auto-refresh every 60 seconds ────────────────────────
+// ── Formatters ────────────────────────────────────────────────
+function twd(v)  { return v==null ? '—' : 'NT$'+Math.round(v).toLocaleString(); }
+function n2(v)   { return v==null ? '—' : parseFloat(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmt(v)  { return v==null ? '—' : parseFloat(v).toLocaleString(); }
+
+// ── Auto refresh every 60s ────────────────────────────────────
 setInterval(refreshAll, 60000);
 
-// ─── Init ─────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  renderChart();  // show history chart immediately
+  renderChart();
   refreshAll();
 });
 </script>
