@@ -115,6 +115,8 @@
   <div class="hdr-r">
     <span id="last-update">—</span>
     <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ 刷新</button>
+    <button class="btn btn-outline btn-sm" onclick="exportData()">⬇ 匯出</button>
+    <label class="btn btn-outline btn-sm" style="cursor:pointer">⬆ 匯入<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
     <button class="btn btn-sm" onclick="openAddModal('tw')">+ 台股</button>
     <button class="btn btn-sm" onclick="openAddModal('us')">+ 美股</button>
     <button class="btn btn-sm" onclick="openAddModal('bank')">+ 存摺</button>
@@ -826,6 +828,47 @@ function delBank(idx) {
 function twd(v)  { return v==null ? '—' : 'NT$'+Math.round(v).toLocaleString(); }
 function n2(v)   { return v==null ? '—' : parseFloat(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmt(v)  { return v==null ? '—' : parseFloat(v).toLocaleString(); }
+
+// ── Export / Import ───────────────────────────────────────────
+function exportData() {
+  const data = {
+    tw_h:  S.get('tw_h')  || [],
+    us_h:  S.get('us_h')  || [],
+    bank:  S.get('bank')  || [],
+    txns:  S.get('txns')  || [],
+    hist:  S.get('hist')  || [],
+    usd_rate: S.get('usd_rate') || 32,
+    exported: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `assets_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.tw_h && !data.us_h) return alert('格式不正確，請選擇正確的備份檔案');
+      if (!confirm(`確定匯入？現有資料將被覆蓋。\n匯出時間：${data.exported||'未知'}`)) return;
+      if (data.tw_h)    { twH  = data.tw_h;  S.set('tw_h',  twH);  }
+      if (data.us_h)    { usH  = data.us_h;  S.set('us_h',  usH);  }
+      if (data.bank)    { bank = data.bank;  S.set('bank',  bank); }
+      if (data.txns)    { txns = data.txns;  S.set('txns',  txns); }
+      if (data.hist)    { hist = data.hist;  S.set('hist',  hist); }
+      if (data.usd_rate){ usdRate = data.usd_rate; S.set('usd_rate', usdRate); }
+      alert('匯入成功！');
+      refreshAll();
+    } catch { alert('檔案解析失敗，請確認是正確的備份檔案'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
 
 // ── Auto refresh every 60s ────────────────────────────────────
 setInterval(refreshAll, 60000);
