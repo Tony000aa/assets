@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tony 資產總覽</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --green: #3fb950;
+    --red: #f85149;
+    --blue: #58a6ff;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --accent: #1f6feb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--blue); }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  #last-update { font-size: 12px; color: var(--text2); }
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-danger { background: var(--red); }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-outline:hover { background: var(--bg3); }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  /* ── Summary Cards ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .card-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .card-value { font-size: 22px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .neu { color: var(--text2); }
+
+  /* ── Chart ── */
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .chart-header h2 { font-size: 15px; font-weight: 600; }
+  .range-btns { display: flex; gap: 6px; }
+  .range-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .range-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chart-wrap { height: 200px; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 20px; }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .section-summary {
+    font-size: 13px;
+    color: var(--text2);
+    display: flex;
+    gap: 16px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  thead { background: var(--bg3); }
+  th {
+    padding: 10px 14px;
+    text-align: right;
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  th:first-child { text-align: left; }
+  td {
+    padding: 11px 14px;
+    text-align: right;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  td:first-child { text-align: left; }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+  .ticker { font-weight: 700; color: var(--blue); }
+  .name-cell { color: var(--text2); font-size: 12px; }
+  .action-cell { display: flex; gap: 6px; justify-content: flex-end; }
+
+  /* ── Spinner ── */
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 360px;
+    max-width: 95vw;
+  }
+  .modal h3 { font-size: 16px; margin-bottom: 18px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+  .form-group input, .form-group select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .loading-row td { text-align: center; color: var(--text2); padding: 20px; }
+
+  /* ── Bank section ── */
+  .bank-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .bank-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .bank-info .bank-name { font-weight: 600; margin-bottom: 3px; }
+  .bank-info .bank-note { font-size: 12px; color: var(--text2); }
+  .bank-amount { font-size: 18px; font-weight: 700; color: var(--text); }
+  .bank-actions { display: flex; gap: 5px; }
+
+  .empty-hint { text-align: center; padding: 24px; color: var(--text2); font-size: 13px; }
+  .price-loading { color: var(--text2); font-size: 12px; }
+
+  @media (max-width: 640px) {
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 8px; }
+    .action-cell { flex-direction: column; gap: 3px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📊 Tony 資產總覽</h1>
+  <div class="header-right">
+    <span id="last-update">尚未更新</span>
+    <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ 刷新</button>
+    <button class="btn btn-sm" onclick="openModal('tw')">+ 台股</button>
+    <button class="btn btn-sm" onclick="openModal('us')">+ 美股</button>
+    <button class="btn btn-sm" onclick="openModal('bank')">+ 存摺</button>
+  </div>
+</header>
+
+<main>
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="card">
+      <div class="card-label">總資產（TWD）</div>
+      <div class="card-value" id="total-assets">—</div>
+      <div class="card-sub" id="assets-sub">台股 + 美股 + 存款</div>
+    </div>
+    <div class="card">
+      <div class="card-label">總損益</div>
+      <div class="card-value" id="total-pnl">—</div>
+      <div class="card-sub" id="pnl-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">台股市值</div>
+      <div class="card-value" id="tw-total">—</div>
+      <div class="card-sub" id="tw-pnl-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">美股市值（含匯率）</div>
+      <div class="card-value" id="us-total">—</div>
+      <div class="card-sub" id="us-pnl-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">銀行存款</div>
+      <div class="card-value" id="bank-total">—</div>
+      <div class="card-sub">現金 + 活存 + 定存</div>
+    </div>
+    <div class="card">
+      <div class="card-label">美元匯率</div>
+      <div class="card-value" id="usd-rate">—</div>
+      <div class="card-sub">USD/TWD</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <h2>總資產走勢</h2>
+      <div class="range-btns">
+        <button class="range-btn active" data-range="30" onclick="setRange(this,30)">30D</button>
+        <button class="range-btn" data-range="90" onclick="setRange(this,90)">90D</button>
+        <button class="range-btn" data-range="180" onclick="setRange(this,180)">180D</button>
+        <button class="range-btn" data-range="9999" onclick="setRange(this,9999)">ALL</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="asset-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Taiwan Stocks -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">
+        🇹🇼 台股
+        <span class="badge" id="tw-count">0 檔</span>
+      </div>
+      <div class="section-summary">
+        <span id="tw-summary-value">市值 —</span>
+        <span id="tw-summary-pnl">損益 —</span>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>股票</th>
+          <th>現價</th>
+          <th>漲跌%</th>
+          <th>股數</th>
+          <th>均價</th>
+          <th>成本</th>
+          <th>市值</th>
+          <th>損益</th>
+          <th>損益%</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tw-tbody">
+        <tr class="loading-row"><td colspan="10">尚無台股持倉，點右上角「+ 台股」新增</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- US Stocks -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">
+        🇺🇸 美股
+        <span class="badge" id="us-count">0 檔</span>
+      </div>
+      <div class="section-summary">
+        <span id="us-summary-value">市值 —</span>
+        <span id="us-summary-pnl">損益 —</span>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>股票</th>
+          <th>現價(USD)</th>
+          <th>漲跌%</th>
+          <th>股數</th>
+          <th>均價(USD)</th>
+          <th>成本(USD)</th>
+          <th>市值(TWD)</th>
+          <th>損益(USD)</th>
+          <th>損益%</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="us-tbody">
+        <tr class="loading-row"><td colspan="10">尚無美股持倉，點右上角「+ 美股」新增</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bank -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">
+        🏦 銀行存摺
+        <span class="badge" id="bank-count">0 筆</span>
+      </div>
+      <div class="section-summary">
+        <span id="bank-summary-value">存款 —</span>
+      </div>
+    </div>
+    <div class="bank-grid" id="bank-grid">
+      <div class="empty-hint" style="grid-column:1/-1">尚無存款資料，點右上角「+ 存摺」新增</div>
+    </div>
+  </div>
+</main>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">新增持倉</h3>
+    <div id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveItem()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Storage ───────────────────────────────────────────────
+const STORE = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+let twHoldings  = STORE.get('tw_holdings')   || [];
+let usHoldings  = STORE.get('us_holdings')   || [];
+let bankEntries = STORE.get('bank_entries')  || [];
+let assetHistory= STORE.get('asset_history') || [];  // [{date, total}]
+let usdRate     = STORE.get('usd_rate')      || 32.0;
+let chartRange  = 30;
+let chart       = null;
+let editMode    = { type: null, idx: -1 };
+
+// ─── USD/TWD Rate ───────────────────────────────────────────
+async function fetchUsdRate() {
+  try {
+    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?interval=1d&range=1d');
+    const j = await r.json();
+    const p = j.chart.result[0].meta.regularMarketPrice;
+    if (p && p > 0) { usdRate = parseFloat((1/p).toFixed(4)) * 100; }
+    // Actually TWD=X is TWD per USD... let's use USDTWD=X
+  } catch {}
+  try {
+    const r2 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/USDTWD=X?interval=1d&range=1d');
+    const j2 = await r2.json();
+    const p2 = j2.chart.result[0].meta.regularMarketPrice;
+    if (p2 && p2 > 20 && p2 < 50) {
+      usdRate = parseFloat(p2.toFixed(2));
+      STORE.set('usd_rate', usdRate);
+    }
+  } catch {}
+  document.getElementById('usd-rate').textContent = usdRate.toFixed(2);
+}
+
+// ─── Taiwan Stock Prices (TWSE) ────────────────────────────
+async function fetchTwPrice(ticker) {
+  // ticker like "2330" or "00878"
+  // Try TWSE first (listed stocks)
+  const urls = [
+    `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_${ticker}.tw&json=1&delay=0`,
+    `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=otc_${ticker}.tw&json=1&delay=0`,
+  ];
+  for (const url of urls) {
+    try {
+      const r = await fetch(url);
+      const j = await r.json();
+      const d = j.msgArray?.[0];
+      if (d && d.z && d.z !== '-') {
+        const price = parseFloat(d.z);
+        const prev  = parseFloat(d.y || d.z);
+        const chg   = prev > 0 ? ((price - prev) / prev * 100) : 0;
+        const name  = d.n || d.nf || ticker;
+        return { price, chg, name };
+      }
+    } catch {}
+  }
+  // Fallback: Yahoo Finance
+  try {
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}.TW?interval=1d&range=2d`);
+    const j = await r.json();
+    const meta = j.chart.result[0].meta;
+    const price = meta.regularMarketPrice;
+    const prev  = meta.chartPreviousClose || meta.previousClose || price;
+    const chg   = ((price - prev) / prev * 100);
+    return { price, chg, name: meta.shortName || ticker };
+  } catch {}
+  return null;
+}
+
+// ─── US Stock Prices (Yahoo Finance) ───────────────────────
+async function fetchUsPrice(ticker) {
+  // Use Yahoo Finance v8 API (no CORS issue for simple GET)
+  try {
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`);
+    const j = await r.json();
+    const meta = j.chart.result[0].meta;
+    const price = meta.regularMarketPrice;
+    const prev  = meta.chartPreviousClose || meta.previousClose || price;
+    const chg   = ((price - prev) / prev * 100);
+    const name  = meta.shortName || ticker;
+    return { price, chg, name };
+  } catch {}
+  // Alternative proxy
+  try {
+    const r = await fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`);
+    const j = await r.json();
+    const meta = j.chart.result[0].meta;
+    const price = meta.regularMarketPrice;
+    const prev  = meta.chartPreviousClose || price;
+    const chg   = ((price - prev) / prev * 100);
+    return { price, chg, name: meta.shortName || ticker };
+  } catch {}
+  return null;
+}
+
+// ─── Render Taiwan Table ───────────────────────────────────
+async function renderTw() {
+  const tbody = document.getElementById('tw-tbody');
+  if (twHoldings.length === 0) {
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="10">尚無台股持倉，點右上角「+ 台股」新增</td></tr>';
+    updateTwSummary(0, 0, 0);
+    return;
+  }
+  // Show loading rows first
+  tbody.innerHTML = twHoldings.map((h, i) => `
+    <tr id="tw-row-${i}">
+      <td><div class="ticker">${h.ticker}</div><div class="name-cell">${h.name || ''}</div></td>
+      <td class="price-loading"><span class="spin"></span></td>
+      <td>—</td>
+      <td>${fmt(h.shares)}</td>
+      <td>${fmtNum(h.avgPrice)}</td>
+      <td>${fmtTwd(h.shares * h.avgPrice)}</td>
+      <td>—</td><td>—</td><td>—</td>
+      <td class="action-cell">
+        <button class="btn btn-outline btn-sm" onclick="openEdit('tw',${i})">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteItem('tw',${i})">刪</button>
+      </td>
+    </tr>
+  `).join('');
+
+  let totalValue = 0, totalCost = 0;
+  const fetches = twHoldings.map(async (h, i) => {
+    const data = await fetchTwPrice(h.ticker);
+    const row  = document.getElementById(`tw-row-${i}`);
+    if (!row) return 0;
+    const cost  = h.shares * h.avgPrice;
+    if (data && data.price) {
+      const value = h.shares * data.price;
+      const pnl   = value - cost;
+      const pnlPct= cost > 0 ? (pnl / cost * 100) : 0;
+      const chgCls= data.chg >= 0 ? 'pos' : 'neg';
+      const pnlCls= pnl >= 0 ? 'pos' : 'neg';
+      // Update stored name
+      twHoldings[i].name = data.name || twHoldings[i].name;
+      row.innerHTML = `
+        <td><div class="ticker">${h.ticker}</div><div class="name-cell">${data.name || h.name}</div></td>
+        <td>${fmtNum(data.price)}</td>
+        <td class="${chgCls}">${data.chg >= 0 ? '+' : ''}${data.chg.toFixed(2)}%</td>
+        <td>${fmt(h.shares)}</td>
+        <td>${fmtNum(h.avgPrice)}</td>
+        <td>${fmtTwd(cost)}</td>
+        <td>${fmtTwd(value)}</td>
+        <td class="${pnlCls}">${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)}</td>
+        <td class="${pnlCls}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</td>
+        <td class="action-cell">
+          <button class="btn btn-outline btn-sm" onclick="openEdit('tw',${i})">編輯</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('tw',${i})">刪</button>
+        </td>
+      `;
+      return { value, cost };
+    } else {
+      row.cells[1].textContent = '取得失敗';
+      return { value: cost, cost };
+    }
+  });
+
+  const results = await Promise.all(fetches);
+  totalValue = results.reduce((s, r) => s + (r?.value || 0), 0);
+  totalCost  = results.reduce((s, r) => s + (r?.cost  || 0), 0);
+  STORE.set('tw_holdings', twHoldings);
+  updateTwSummary(totalValue, totalCost, twHoldings.length);
+  return totalValue;
+}
+
+function updateTwSummary(value, cost, count) {
+  const pnl    = value - cost;
+  const pnlPct = cost > 0 ? (pnl / cost * 100) : 0;
+  document.getElementById('tw-count').textContent = `${count} 檔`;
+  document.getElementById('tw-summary-value').textContent = `市值 ${fmtTwd(value)}`;
+  document.getElementById('tw-summary-pnl').textContent = `損益 ${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
+  document.getElementById('tw-total').textContent = fmtTwd(value);
+  document.getElementById('tw-total').className = 'card-value';
+  document.getElementById('tw-pnl-sub').textContent = `損益 ${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)} (${pnlPct.toFixed(2)}%)`;
+  document.getElementById('tw-pnl-sub').className = pnl >= 0 ? 'card-sub pos' : 'card-sub neg';
+}
+
+// ─── Render US Table ───────────────────────────────────────
+async function renderUs() {
+  const tbody = document.getElementById('us-tbody');
+  if (usHoldings.length === 0) {
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="10">尚無美股持倉，點右上角「+ 美股」新增</td></tr>';
+    updateUsSummary(0, 0, 0);
+    return;
+  }
+  tbody.innerHTML = usHoldings.map((h, i) => `
+    <tr id="us-row-${i}">
+      <td><div class="ticker">${h.ticker}</div><div class="name-cell">${h.name || ''}</div></td>
+      <td class="price-loading"><span class="spin"></span></td>
+      <td>—</td>
+      <td>${h.shares}</td>
+      <td>$${fmtNum(h.avgPrice)}</td>
+      <td>$${fmtNum(h.shares * h.avgPrice)}</td>
+      <td>—</td><td>—</td><td>—</td>
+      <td class="action-cell">
+        <button class="btn btn-outline btn-sm" onclick="openEdit('us',${i})">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteItem('us',${i})">刪</button>
+      </td>
+    </tr>
+  `).join('');
+
+  const fetches = usHoldings.map(async (h, i) => {
+    const data = await fetchUsPrice(h.ticker);
+    const row  = document.getElementById(`us-row-${i}`);
+    if (!row) return { valueTwd: 0, cost: 0 };
+    const cost     = h.shares * h.avgPrice;
+    const costTwd  = cost * usdRate;
+    if (data && data.price) {
+      const value    = h.shares * data.price;
+      const valueTwd = value * usdRate;
+      const pnl      = value - cost;
+      const pnlTwd   = pnl * usdRate;
+      const pnlPct   = cost > 0 ? (pnl / cost * 100) : 0;
+      const chgCls   = data.chg >= 0 ? 'pos' : 'neg';
+      const pnlCls   = pnl >= 0 ? 'pos' : 'neg';
+      usHoldings[i].name = data.name || usHoldings[i].name;
+      row.innerHTML = `
+        <td><div class="ticker">${h.ticker}</div><div class="name-cell">${data.name || h.name}</div></td>
+        <td>$${fmtNum(data.price)}</td>
+        <td class="${chgCls}">${data.chg >= 0 ? '+' : ''}${data.chg.toFixed(2)}%</td>
+        <td>${h.shares}</td>
+        <td>$${fmtNum(h.avgPrice)}</td>
+        <td>$${fmtNum(cost)}</td>
+        <td>${fmtTwd(valueTwd)}</td>
+        <td class="${pnlCls}">$${pnl >= 0 ? '+' : ''}${fmtNum(pnl)}</td>
+        <td class="${pnlCls}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</td>
+        <td class="action-cell">
+          <button class="btn btn-outline btn-sm" onclick="openEdit('us',${i})">編輯</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('us',${i})">刪</button>
+        </td>
+      `;
+      return { valueTwd, cost: costTwd };
+    } else {
+      row.cells[1].textContent = '取得失敗';
+      return { valueTwd: costTwd, cost: costTwd };
+    }
+  });
+
+  const results = await Promise.all(fetches);
+  const totalValueTwd = results.reduce((s, r) => s + (r?.valueTwd || 0), 0);
+  const totalCostTwd  = results.reduce((s, r) => s + (r?.cost     || 0), 0);
+  STORE.set('us_holdings', usHoldings);
+  updateUsSummary(totalValueTwd, totalCostTwd, usHoldings.length);
+  return totalValueTwd;
+}
+
+function updateUsSummary(valueTwd, costTwd, count) {
+  const pnl    = valueTwd - costTwd;
+  const pnlPct = costTwd > 0 ? (pnl / costTwd * 100) : 0;
+  document.getElementById('us-count').textContent = `${count} 檔`;
+  document.getElementById('us-summary-value').textContent = `市值 ${fmtTwd(valueTwd)}`;
+  document.getElementById('us-summary-pnl').textContent = `損益 ${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)`;
+  document.getElementById('us-total').textContent = fmtTwd(valueTwd);
+  document.getElementById('us-pnl-sub').textContent = `損益 ${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)} (${pnlPct.toFixed(2)}%)`;
+  document.getElementById('us-pnl-sub').className = pnl >= 0 ? 'card-sub pos' : 'card-sub neg';
+}
+
+// ─── Render Bank ───────────────────────────────────────────
+function renderBank() {
+  const grid = document.getElementById('bank-grid');
+  const total = bankEntries.reduce((s, b) => s + b.amount, 0);
+  document.getElementById('bank-count').textContent = `${bankEntries.length} 筆`;
+  document.getElementById('bank-summary-value').textContent = `存款 ${fmtTwd(total)}`;
+  document.getElementById('bank-total').textContent = fmtTwd(total);
+
+  if (bankEntries.length === 0) {
+    grid.innerHTML = '<div class="empty-hint" style="grid-column:1/-1">尚無存款資料，點右上角「+ 存摺」新增</div>';
+    return;
+  }
+  grid.innerHTML = bankEntries.map((b, i) => `
+    <div class="bank-card">
+      <div class="bank-info">
+        <div class="bank-name">${b.bankName}</div>
+        <div class="bank-note">${b.note || '活存'}</div>
+      </div>
+      <div>
+        <div class="bank-amount">${fmtTwd(b.amount)}</div>
+        <div class="bank-actions">
+          <button class="btn btn-outline btn-sm" onclick="openEdit('bank',${i})">編</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('bank',${i})">刪</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  return total;
+}
+
+// ─── Summary Cards ─────────────────────────────────────────
+function updateTotals(twValue, usValue, bankValue) {
+  const total    = (twValue || 0) + (usValue || 0) + (bankValue || 0);
+  const twCost   = twHoldings.reduce((s, h) => s + h.shares * h.avgPrice, 0);
+  const usCostTwd= usHoldings.reduce((s, h) => s + h.shares * h.avgPrice * usdRate, 0);
+  const totalCost= twCost + usCostTwd;
+  const pnl      = total - totalCost - (bankValue || 0);
+  const pnlPct   = totalCost > 0 ? (pnl / totalCost * 100) : 0;
+
+  document.getElementById('total-assets').textContent = fmtTwd(total);
+  document.getElementById('total-pnl').textContent    = `${pnl >= 0 ? '+' : ''}${fmtTwd(pnl)}`;
+  document.getElementById('total-pnl').className      = `card-value ${pnl >= 0 ? 'pos' : 'neg'}`;
+  document.getElementById('pnl-sub').textContent      = `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}% 含投資部位`;
+
+  // Save daily snapshot
+  const today = new Date().toISOString().slice(0, 10);
+  const last  = assetHistory[assetHistory.length - 1];
+  if (total > 0) {
+    if (!last || last.date !== today) {
+      assetHistory.push({ date: today, total: Math.round(total) });
+      if (assetHistory.length > 365) assetHistory.shift();
+      STORE.set('asset_history', assetHistory);
+    } else {
+      last.total = Math.round(total);
+      STORE.set('asset_history', assetHistory);
+    }
+    renderChart();
+  }
+}
+
+// ─── Chart ─────────────────────────────────────────────────
+function renderChart() {
+  const now    = new Date();
+  let filtered = assetHistory;
+  if (chartRange < 9999) {
+    const cutoff = new Date(now - chartRange * 86400000).toISOString().slice(0, 10);
+    filtered = assetHistory.filter(p => p.date >= cutoff);
+  }
+
+  const labels = filtered.map(p => p.date.slice(5));
+  const data   = filtered.map(p => p.total);
+
+  if (chart) chart.destroy();
+  const ctx = document.getElementById('asset-chart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 200);
+  grad.addColorStop(0, 'rgba(88,166,255,0.25)');
+  grad.addColorStop(1, 'rgba(88,166,255,0)');
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: '#58a6ff',
+        backgroundColor: grad,
+        borderWidth: 2,
+        pointRadius: data.length <= 30 ? 3 : 0,
+        pointHoverRadius: 5,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `NT$ ${ctx.raw.toLocaleString()}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#21262d' },
+          ticks: { color: '#8b949e', maxTicksLimit: 8 }
+        },
+        y: {
+          grid: { color: '#21262d' },
+          ticks: {
+            color: '#8b949e',
+            callback: v => 'NT$' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : (v/1000).toFixed(0)+'K')
+          }
+        }
+      }
+    }
+  });
+}
+
+function setRange(btn, range) {
+  chartRange = range;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderChart();
+}
+
+// ─── Refresh All ───────────────────────────────────────────
+async function refreshAll() {
+  document.getElementById('last-update').textContent = '更新中…';
+  await fetchUsdRate();
+  const [twVal, usVal] = await Promise.all([renderTw(), renderUs()]);
+  const bankVal = renderBank();
+  updateTotals(twVal, usVal, bankVal);
+  document.getElementById('last-update').textContent =
+    '更新時間 ' + new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+// ─── Modal ─────────────────────────────────────────────────
+function openModal(type, idx = -1) {
+  editMode = { type, idx };
+  const modal   = document.getElementById('modal');
+  const title   = document.getElementById('modal-title');
+  const body    = document.getElementById('modal-body');
+  modal.classList.add('open');
+
+  if (type === 'tw') {
+    const h = idx >= 0 ? twHoldings[idx] : {};
+    title.textContent = idx >= 0 ? '編輯台股' : '新增台股';
+    body.innerHTML = `
+      <div class="form-group"><label>股票代號（如 2330）</label>
+        <input id="f-ticker" value="${h.ticker || ''}" placeholder="2330"></div>
+      <div class="form-group"><label>名稱（可留空自動取得）</label>
+        <input id="f-name" value="${h.name || ''}" placeholder="台積電"></div>
+      <div class="form-group"><label>持股張數或股數（輸入股數）</label>
+        <input id="f-shares" type="number" value="${h.shares || ''}" placeholder="1000"></div>
+      <div class="form-group"><label>均價（TWD）</label>
+        <input id="f-avg" type="number" step="0.01" value="${h.avgPrice || ''}" placeholder="950.00"></div>
+    `;
+  } else if (type === 'us') {
+    const h = idx >= 0 ? usHoldings[idx] : {};
+    title.textContent = idx >= 0 ? '編輯美股' : '新增美股';
+    body.innerHTML = `
+      <div class="form-group"><label>股票代號（如 NVDA）</label>
+        <input id="f-ticker" value="${h.ticker || ''}" placeholder="NVDA"></div>
+      <div class="form-group"><label>名稱（可留空自動取得）</label>
+        <input id="f-name" value="${h.name || ''}" placeholder="NVIDIA"></div>
+      <div class="form-group"><label>股數</label>
+        <input id="f-shares" type="number" step="0.001" value="${h.shares || ''}" placeholder="10"></div>
+      <div class="form-group"><label>均價（USD）</label>
+        <input id="f-avg" type="number" step="0.01" value="${h.avgPrice || ''}" placeholder="500.00"></div>
+    `;
+  } else if (type === 'bank') {
+    const h = idx >= 0 ? bankEntries[idx] : {};
+    title.textContent = idx >= 0 ? '編輯存摺' : '新增存摺';
+    body.innerHTML = `
+      <div class="form-group"><label>銀行名稱</label>
+        <input id="f-bank" value="${h.bankName || ''}" placeholder="台灣銀行"></div>
+      <div class="form-group"><label>備註（活存/定存/外幣）</label>
+        <input id="f-note" value="${h.note || ''}" placeholder="活存"></div>
+      <div class="form-group"><label>金額（TWD）</label>
+        <input id="f-amount" type="number" value="${h.amount || ''}" placeholder="500000"></div>
+    `;
+  }
+}
+
+function openEdit(type, idx) { openModal(type, idx); }
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function saveItem() {
+  const { type, idx } = editMode;
+  if (type === 'tw') {
+    const ticker = document.getElementById('f-ticker').value.trim().toUpperCase();
+    const name   = document.getElementById('f-name').value.trim();
+    const shares = parseFloat(document.getElementById('f-shares').value);
+    const avg    = parseFloat(document.getElementById('f-avg').value);
+    if (!ticker || !shares || !avg) return alert('請填寫所有必填欄位');
+    const item = { ticker, name, shares, avgPrice: avg };
+    if (idx >= 0) twHoldings[idx] = item; else twHoldings.push(item);
+    STORE.set('tw_holdings', twHoldings);
+  } else if (type === 'us') {
+    const ticker = document.getElementById('f-ticker').value.trim().toUpperCase();
+    const name   = document.getElementById('f-name').value.trim();
+    const shares = parseFloat(document.getElementById('f-shares').value);
+    const avg    = parseFloat(document.getElementById('f-avg').value);
+    if (!ticker || !shares || !avg) return alert('請填寫所有必填欄位');
+    const item = { ticker, name, shares, avgPrice: avg };
+    if (idx >= 0) usHoldings[idx] = item; else usHoldings.push(item);
+    STORE.set('us_holdings', usHoldings);
+  } else if (type === 'bank') {
+    const bankName = document.getElementById('f-bank').value.trim();
+    const note     = document.getElementById('f-note').value.trim();
+    const amount   = parseFloat(document.getElementById('f-amount').value);
+    if (!bankName || !amount) return alert('請填寫銀行名稱與金額');
+    const item = { bankName, note, amount };
+    if (idx >= 0) bankEntries[idx] = item; else bankEntries.push(item);
+    STORE.set('bank_entries', bankEntries);
+  }
+  closeModal();
+  refreshAll();
+}
+
+function deleteItem(type, idx) {
+  if (!confirm('確定刪除？')) return;
+  if (type === 'tw')   { twHoldings.splice(idx, 1);  STORE.set('tw_holdings', twHoldings); }
+  if (type === 'us')   { usHoldings.splice(idx, 1);  STORE.set('us_holdings', usHoldings); }
+  if (type === 'bank') { bankEntries.splice(idx, 1); STORE.set('bank_entries', bankEntries); }
+  refreshAll();
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+// ─── Formatters ────────────────────────────────────────────
+function fmtTwd(v) {
+  if (!v && v !== 0) return '—';
+  return 'NT$' + Math.round(v).toLocaleString();
+}
+function fmtNum(v) {
+  if (!v && v !== 0) return '—';
+  return parseFloat(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmt(v) {
+  return v ? parseFloat(v).toLocaleString() : '—';
+}
+
+// ─── Auto-refresh every 60 seconds ────────────────────────
+setInterval(refreshAll, 60000);
+
+// ─── Init ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  renderChart();  // show history chart immediately
+  refreshAll();
+});
+</script>
+</body>
+</html>
