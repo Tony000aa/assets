@@ -152,11 +152,19 @@ tr[onclick]:active td{background:rgba(88,166,255,.07)!important;}
 .sort-btn:hover{color:var(--text);border-color:var(--text2);}
 .sort-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 /* Action expand row */
+.action-row{animation:slideDown .15s ease;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:translateY(0);}}
 .action-row td{padding:10px 12px!important;background:var(--bg3)!important;border-top:none!important;}
 .action-expand{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+/* Scrollable table on mobile */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;}
+.table-scroll table{border-radius:0;}
 @media(max-width:640px){
-  .action-expand .btn{padding:7px 13px;font-size:12px;}
-  .action-expand{gap:8px;}
+  .action-expand .btn{padding:8px 14px;font-size:13px;}
+  .action-expand{gap:9px;padding:2px 0;}
+  .ticker{font-size:12px;max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .name-cell{max-width:55px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  td:nth-child(2){max-width:65px;}
 }
 /* Alert styles */
 .al-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;vertical-align:middle;margin-left:4px;line-height:1;}
@@ -302,7 +310,6 @@ tr.alert-profit{background:rgba(63,185,80,.05)!important;box-shadow:inset 3px 0 
         <button class="btn btn-sm" onclick="openAddModal('tw')">+ 新增</button>
       </div>
     </div>
-    <table>
     <div class="sort-bar" id="tw-sort-bar">
       排序：
       <button class="sort-btn" id="tw-sort-value" onclick="setSort('tw','value')">市值</button>
@@ -310,12 +317,13 @@ tr.alert-profit{background:rgba(63,185,80,.05)!important;box-shadow:inset 3px 0 
       <button class="sort-btn" id="tw-sort-name" onclick="setSort('tw','name')">名稱</button>
       <button class="sort-btn" id="tw-sort-none" onclick="setSort('tw','')">預設↕</button>
     </div>
+    <div class="table-scroll"><table>
       <thead><tr>
-        <th class="mob-hide" style="width:20px"></th><th>代號／名稱</th><th>現價</th><th>今日%</th><th class="mob-hide">股數</th><th class="mob-hide">均價</th>
-        <th class="mob-hide">成本</th><th class="mob-hide">市值</th><th>損益</th><th>損益%</th><th class="mob-hide">手續費</th><th style="width:16px"></th>
+        <th class="mob-hide" style="width:20px"></th><th style="min-width:70px">代號／名稱</th><th>現價</th><th>今日%</th><th>股數</th><th>均價</th>
+        <th>成本</th><th>市值</th><th>損益</th><th>損益%</th><th>手續費</th><th style="width:20px"></th>
       </tr></thead>
       <tbody id="tw-body"><tr><td colspan="12" class="empty-hint">尚無台股</td></tr></tbody>
-    </table>
+    </table></div>
   </div>
 
   <div class="section">
@@ -326,7 +334,6 @@ tr.alert-profit{background:rgba(63,185,80,.05)!important;box-shadow:inset 3px 0 
         <button class="btn btn-sm" onclick="openAddModal('us')">+ 新增</button>
       </div>
     </div>
-    <table>
     <div class="sort-bar">
       排序：
       <button class="sort-btn" id="us-sort-value" onclick="setSort('us','value')">市值</button>
@@ -334,12 +341,13 @@ tr.alert-profit{background:rgba(63,185,80,.05)!important;box-shadow:inset 3px 0 
       <button class="sort-btn" id="us-sort-name" onclick="setSort('us','name')">名稱</button>
       <button class="sort-btn" id="us-sort-none" onclick="setSort('us','')">預設↕</button>
     </div>
+    <div class="table-scroll"><table>
       <thead><tr>
-        <th class="mob-hide" style="width:20px"></th><th>代號／名稱</th><th>現價(USD)</th><th>今日%</th><th class="mob-hide">股數</th><th class="mob-hide">均價</th>
-        <th class="mob-hide">成本(USD)</th><th class="mob-hide">市值(TWD)</th><th>損益(USD)</th><th>損益%</th><th class="mob-hide">匯率損益</th><th style="width:16px"></th>
+        <th class="mob-hide" style="width:20px"></th><th style="min-width:70px">代號／名稱</th><th>現價(USD)</th><th>今日%</th><th>股數</th><th>均價</th>
+        <th>成本(USD)</th><th>市值(TWD)</th><th>損益(USD)</th><th>損益%</th><th>匯率損益</th><th style="width:20px"></th>
       </tr></thead>
       <tbody id="us-body"><tr><td colspan="12" class="empty-hint">尚無美股</td></tr></tbody>
-    </table>
+    </table></div>
   </div>
 
   <div class="section">
@@ -505,7 +513,8 @@ async function yf(sym,tw=false){
     const res=j?.chart?.result?.[0];if(!res)continue;
     const m=res.meta,price=m.regularMarketPrice;if(!price)continue;
     const prev=m.chartPreviousClose||m.previousClose||price;
-    const name=m.longName||m.shortName||m.symbol||sym;
+    // TW stocks: shortName is Chinese (e.g.台積電), longName is English official name
+    const name=tw?(m.shortName||m.longName||m.symbol||sym):(m.longName||m.shortName||m.symbol||sym);
     return{price,chg:(price-prev)/prev*100,name};
   }catch{}}
   return null;
@@ -600,18 +609,18 @@ function twRowHtml(h,i,d,paidFee){
   else if(d?.price&&al.takeProfit&&d.price>=al.takeProfit){alertClass='alert-profit';alertBadge=`<span class="al-badge al-profit">停利</span>`;}
   const nameCol=`<td style="text-align:left"><div class="ticker">${h.ticker}${alertBadge}</div><div class="name-cell">${h.name||''}</div></td>`;
   const expTd=`<td style="width:20px;text-align:center;color:var(--text2);font-size:13px;padding:0 3px">▾</td>`;
-  const onclick=`onclick="toggleActionRow('tw',${i})" ontouchend="event.preventDefault();toggleActionRow('tw',${i})"`;
-  if(!d?.price) return `<tr id="twr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td class="mob-hide">${fmt(h.shares)}</td><td class="mob-hide">${n2(h.avgPrice)}</td><td class="mob-hide">${twd(cost)}</td><td class="mob-hide">—</td><td>—</td><td>—</td><td class="mob-hide">—</td>${expTd}</tr>`;
+  const onclick=`onclick="toggleActionRow('tw',${i})"`;
+  if(!d?.price) return `<tr id="twr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td>${fmt(h.shares)}</td><td>${n2(h.avgPrice)}</td><td>${twd(cost)}</td><td>—</td><td>—</td><td>—</td><td>—</td>${expTd}</tr>`;
   const val=h.shares*d.price,pnl=val-cost,pp=cost>0?pnl/cost*100:0;
   const cc=d.chg>=0?'pos':'neg',pc=pnl>=0?'pos':'neg';
   return`<tr id="twr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}
     ${nameCol}
     <td>${n2(d.price)}</td><td class="${cc}">${d.chg>=0?'+':''}${d.chg.toFixed(2)}%</td>
-    <td class="mob-hide">${fmt(h.shares)}</td><td class="mob-hide">${n2(h.avgPrice)}</td>
-    <td class="mob-hide">${twd(cost)}</td><td class="mob-hide">${twd(val)}</td>
+    <td>${fmt(h.shares)}</td><td>${n2(h.avgPrice)}</td>
+    <td>${twd(cost)}</td><td>${twd(val)}</td>
     <td class="${pc}">${pnl>=0?'+':''}${twd(pnl)}</td>
     <td class="${pc}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
-    <td class="mob-hide" style="color:var(--text2)">${twd(paidFee)}</td>
+    <td style="color:var(--text2)">${twd(paidFee)}</td>
     ${expTd}</tr>`;
 }
 function usRowHtml(h,i,d,fxPnl){
@@ -623,18 +632,18 @@ function usRowHtml(h,i,d,fxPnl){
   else if(d?.price&&al.takeProfit&&d.price>=al.takeProfit){alertClass='alert-profit';alertBadge=`<span class="al-badge al-profit">停利</span>`;}
   const nameCol=`<td style="text-align:left"><div class="ticker">${h.ticker}${alertBadge}</div><div class="name-cell">${h.name||''}</div></td>`;
   const expTd=`<td style="width:20px;text-align:center;color:var(--text2);font-size:13px;padding:0 3px">▾</td>`;
-  const onclick=`onclick="toggleActionRow('us',${i})" ontouchend="event.preventDefault();toggleActionRow('us',${i})"`;
-  if(!d?.price) return `<tr id="usr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td class="mob-hide">${h.shares}</td><td class="mob-hide">$${n2(h.avgPrice)}</td><td class="mob-hide">$${n2(cost)}</td><td class="mob-hide">—</td><td>—</td><td>—</td><td class="mob-hide">—</td>${expTd}</tr>`;
+  const onclick=`onclick="toggleActionRow('us',${i})"`;
+  if(!d?.price) return `<tr id="usr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td>${h.shares}</td><td>$${n2(h.avgPrice)}</td><td>$${n2(cost)}</td><td>—</td><td>—</td><td>—</td><td>—</td>${expTd}</tr>`;
   const val=h.shares*d.price,valTwd=val*usdRate,pnl=val-cost,pp=cost>0?pnl/cost*100:0;
   const cc=d.chg>=0?'pos':'neg',pc=pnl>=0?'pos':'neg',fc=(fxPnl||0)>=0?'pos':'neg';
   return`<tr id="usr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}
     ${nameCol}
     <td>$${n2(d.price)}</td><td class="${cc}">${d.chg>=0?'+':''}${d.chg.toFixed(2)}%</td>
-    <td class="mob-hide">${h.shares}</td><td class="mob-hide">$${n2(h.avgPrice)}</td>
-    <td class="mob-hide">$${n2(cost)}</td><td class="mob-hide">${twd(valTwd)}</td>
+    <td>${h.shares}</td><td>$${n2(h.avgPrice)}</td>
+    <td>$${n2(cost)}</td><td>${twd(valTwd)}</td>
     <td class="${pc}">$${pnl>=0?'+':''}${n2(pnl)}</td>
     <td class="${pc}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
-    <td class="mob-hide ${fc}">${(fxPnl||0)>=0?'+':''}${twd(fxPnl||0)}</td>
+    <td class="${fc}">${(fxPnl||0)>=0?'+':''}${twd(fxPnl||0)}</td>
     ${expTd}</tr>`;
 }
 // ── Row expand / action panel ──────────────────────────────────
