@@ -95,11 +95,38 @@ tr:hover td{background:rgba(255,255,255,.025);}
 .monthly-table{margin-bottom:14px;}
 .empty-hint{text-align:center;padding:20px;color:var(--text2);font-size:12px;}
 .price-err{color:var(--red);font-size:11px;}
-.benchmark-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
-.bench-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;}
+.benchmark-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.bench-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:12px;}
 .bench-item .bl{color:var(--text2);font-size:11px;}
-.bench-item .bv{font-size:16px;font-weight:700;}
+.bench-item .bv{font-size:15px;font-weight:700;}
 .divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+/* Overview redesign */
+.hero-card{background:linear-gradient(135deg,#1a2332 0%,#161b22 100%);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+.hero-left .hero-label{font-size:12px;color:var(--text2);margin-bottom:6px;letter-spacing:.5px;}
+.hero-left .hero-value{font-size:38px;font-weight:800;color:var(--text);letter-spacing:-1px;}
+.hero-left .hero-sub{font-size:12px;color:var(--text2);margin-top:4px;}
+.hero-right{text-align:right;}
+.hero-right .hero-label{font-size:12px;color:var(--text2);margin-bottom:4px;}
+.hero-pnl-val{font-size:26px;font-weight:700;}
+.hero-pnl-pct{font-size:14px;color:var(--text2);margin-top:2px;}
+.asset-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+@media(max-width:700px){.asset-row{grid-template-columns:1fr 1fr;}.hero-card{flex-direction:column;}.hero-right{text-align:left;}}
+@media(max-width:420px){.asset-row{grid-template-columns:1fr;}}
+.asset-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+.asset-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.asset-card.tw::before{background:linear-gradient(90deg,#58a6ff,#1f6feb);}
+.asset-card.us::before{background:linear-gradient(90deg,#3fb950,#238636);}
+.asset-card.bk::before{background:linear-gradient(90deg,#d29922,#b47d1a);}
+.asset-flag{font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600;}
+.asset-value{font-size:22px;font-weight:700;margin-bottom:6px;}
+.asset-pnl{font-size:14px;font-weight:600;margin-bottom:2px;}
+.asset-pct{font-size:12px;color:var(--text2);}
+.asset-cost{font-size:11px;color:var(--text2);margin-top:4px;padding-top:4px;border-top:1px solid var(--border);}
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+@media(max-width:700px){.metrics-row{grid-template-columns:repeat(2,1fr);}}
+.metric-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;}
+.metric-label{font-size:11px;color:var(--text2);margin-bottom:4px;}
+.metric-val{font-size:16px;font-weight:700;}
 @media(max-width:640px){th,td{padding:7px 7px;font-size:11px;}.grid.g2{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
@@ -125,24 +152,62 @@ tr:hover td{background:rgba(255,255,255,.025);}
 <main>
 <!-- ══ 總覽 ══════════════════════════════════════════ -->
 <div id="tab-overview" class="tab-pane active">
-  <div class="grid g2" style="margin-top:14px">
-    <div class="card"><div class="card-label">總資產（TWD）</div><div class="card-value" id="c-total">—</div><div class="card-sub" id="c-total-sub">—</div></div>
-    <div class="card"><div class="card-label">未實現損益</div><div class="card-value" id="c-upnl">—</div><div class="card-sub" id="c-upnl-pct">—</div></div>
-    <div class="card"><div class="card-label">已實現損益</div><div class="card-value" id="c-rpnl">—</div><div class="card-sub" id="c-rpnl-sub">累積</div></div>
-    <div class="card"><div class="card-label">台股市值</div><div class="card-value" id="c-tw">—</div><div class="card-sub" id="c-tw-sub">—</div></div>
-    <div class="card"><div class="card-label">美股市值（TWD）</div><div class="card-value" id="c-us">—</div><div class="card-sub" id="c-us-sub">—</div></div>
-    <div class="card"><div class="card-label">銀行存款</div><div class="card-value" id="c-bank">—</div><div class="card-sub" id="c-rate">USD/TWD —</div></div>
-    <div class="card"><div class="card-label">匯率損益（美股）</div><div class="card-value" id="c-fx">—</div><div class="card-sub" id="c-fx-sub">買入均匯 vs 現匯</div></div>
-    <div class="card"><div class="card-label">股息累積收入</div><div class="card-value" id="c-div">—</div><div class="card-sub" id="c-div-sub">—</div></div>
+
+  <!-- Hero：總資產 -->
+  <div class="hero-card" style="margin-top:14px">
+    <div class="hero-left">
+      <div class="hero-label">💰 總資產</div>
+      <div class="hero-value" id="c-total">—</div>
+      <div class="hero-sub" id="c-total-sub">台股 ＋ 美股 ＋ 存款</div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-label">整體未實現損益</div>
+      <div class="hero-pnl-val" id="c-upnl">—</div>
+      <div class="hero-pnl-pct" id="c-upnl-pct">—</div>
+    </div>
   </div>
 
-  <div class="benchmark-row" id="benchmark-row">
-    <div class="bench-item"><div class="bl">大盤今日</div><div class="bv" id="b-twii">—</div></div>
+  <!-- 三大區塊：台股 / 美股 / 存款 -->
+  <div class="asset-row">
+    <div class="asset-card tw">
+      <div class="asset-flag">🇹🇼 台股</div>
+      <div class="asset-value" id="c-tw">—</div>
+      <div class="asset-pnl" id="c-tw-pnl">—</div>
+      <div class="asset-pct" id="c-tw-pct">—</div>
+      <div class="asset-cost" id="c-tw-cost">成本 —</div>
+    </div>
+    <div class="asset-card us">
+      <div class="asset-flag">🇺🇸 美股（TWD）</div>
+      <div class="asset-value" id="c-us">—</div>
+      <div class="asset-pnl" id="c-us-pnl">—</div>
+      <div class="asset-pct" id="c-us-pct">—</div>
+      <div class="asset-cost" id="c-us-cost">成本 —</div>
+    </div>
+    <div class="asset-card bk">
+      <div class="asset-flag">🏦 銀行存款</div>
+      <div class="asset-value" id="c-bank">—</div>
+      <div class="asset-pct" style="margin-top:8px" id="c-bank-pct">佔總資產 —%</div>
+      <div class="asset-cost" id="c-rate">USD/TWD —</div>
+    </div>
+  </div>
+
+  <!-- 次要指標 -->
+  <div class="metrics-row">
+    <div class="metric-item"><div class="metric-label">已實現損益</div><div class="metric-val" id="c-rpnl">—</div></div>
+    <div class="metric-item"><div class="metric-label">匯率損益（美股）</div><div class="metric-val" id="c-fx">—</div></div>
+    <div class="metric-item"><div class="metric-label">股息累積收入</div><div class="metric-val" id="c-div">—</div></div>
+    <div class="metric-item"><div class="metric-label">股息 / 匯率說明</div><div class="metric-val" id="c-div-sub" style="font-size:12px;color:var(--text2)">—</div></div>
+  </div>
+
+  <!-- 大盤比對 -->
+  <div class="benchmark-row">
+    <div class="bench-item"><div class="bl">台灣加權 今日</div><div class="bv" id="b-twii">—</div></div>
     <div class="bench-item"><div class="bl">0050 今日</div><div class="bv" id="b-0050">—</div></div>
     <div class="bench-item"><div class="bl">費半 SOX ETF</div><div class="bv" id="b-sox">—</div></div>
     <div class="bench-item"><div class="bl">USD/TWD</div><div class="bv" id="b-rate">—</div></div>
   </div>
 
+  <!-- 圖表 -->
   <div class="chart-2col">
     <div class="chart-card" style="margin-bottom:0">
       <div class="chart-header"><h2>資產配置</h2><span style="font-size:11px;color:var(--text2)" id="alloc-label">—</span></div>
@@ -292,9 +357,9 @@ tr:hover td{background:rgba(255,255,255,.025);}
       <thead><tr>
         <th style="text-align:left">日期</th><th style="text-align:left">類型</th>
         <th style="text-align:left">代號</th><th>股數</th><th>價格</th><th>手續費</th>
-        <th>金額</th><th>已實現損益</th>
+        <th>金額</th><th>已實現損益</th><th></th>
       </tr></thead>
-      <tbody id="txn-body"><tr><td colspan="8" class="empty-hint">尚無交易紀錄</td></tr></tbody>
+      <tbody id="txn-body"><tr><td colspan="9" class="empty-hint">尚無交易紀錄</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -422,10 +487,12 @@ async function renderTw(){
   S.set('tw_h',twH);updTwCard(tv,tc);return tv;
 }
 function updTwCard(v,c){
-  const p=v-c,pp=c>0?p/c*100:0;
+  const p=v-c,pp=c>0?p/c*100:0,pc=p>=0?'pos':'neg';
   document.getElementById('c-tw').textContent=twd(v);
-  document.getElementById('c-tw-sub').textContent=v>0?`損益 ${p>=0?'+':''}${twd(p)} (${pp.toFixed(2)})%`:'—';
-  document.getElementById('c-tw-sub').className=`card-sub ${p>=0?'pos':'neg'}`;
+  document.getElementById('c-tw-pnl').textContent=`${p>=0?'+':''}${twd(p)}`;
+  document.getElementById('c-tw-pnl').className=`asset-pnl ${pc}`;
+  document.getElementById('c-tw-pct').textContent=`${pp>=0?'+':''}${pp.toFixed(2)}% 未實現`;
+  document.getElementById('c-tw-cost').textContent=`成本 ${twd(c)}`;
   document.getElementById('tw-info').textContent=v>0?`市值${twd(v)} 損益${p>=0?'+':''}${pp.toFixed(2)}%`:'';
 }
 
@@ -480,10 +547,12 @@ async function renderUs(){
   S.set('us_h',usH);updUsCard(tv,tc);return tv;
 }
 function updUsCard(v,c){
-  const p=v-c,pp=c>0?p/c*100:0;
+  const p=v-c,pp=c>0?p/c*100:0,pc=p>=0?'pos':'neg';
   document.getElementById('c-us').textContent=twd(v);
-  document.getElementById('c-us-sub').textContent=v>0?`損益 ${p>=0?'+':''}${twd(p)} (${pp.toFixed(2)}%)`:'—';
-  document.getElementById('c-us-sub').className=`card-sub ${p>=0?'pos':'neg'}`;
+  document.getElementById('c-us-pnl').textContent=`${p>=0?'+':''}${twd(p)}`;
+  document.getElementById('c-us-pnl').className=`asset-pnl ${pc}`;
+  document.getElementById('c-us-pct').textContent=`${pp>=0?'+':''}${pp.toFixed(2)}% 未實現`;
+  document.getElementById('c-us-cost').textContent=`成本 ${twd(c)}`;
   document.getElementById('us-info').textContent=v>0?`市值${twd(v)} 損益${p>=0?'+':''}${pp.toFixed(2)}%`:'';
 }
 
@@ -613,8 +682,9 @@ function renderMonthlySummary(){
 function renderTxns(){
   const tb=document.getElementById('txn-body');
   document.getElementById('txn-badge').textContent=`${txns.length} 筆`;
-  if(!txns.length){tb.innerHTML='<tr><td colspan="8" class="empty-hint">尚無交易紀錄</td></tr>';return;}
-  tb.innerHTML=[...txns].reverse().map(t=>{
+  if(!txns.length){tb.innerHTML='<tr><td colspan="9" class="empty-hint">尚無交易紀錄</td></tr>';return;}
+  tb.innerHTML=[...txns].reverse().map((t,ri)=>{
+    const realIdx=txns.length-1-ri;
     const amount=t.shares*t.price;const cur=t.market==='US'?'USD':'TWD';
     const rp=t.realizedPnl!=null?`<span class="${t.realizedPnl>=0?'pos':'neg'}">${t.realizedPnl>=0?'+':''}${n2(t.realizedPnl)} ${cur}</span>`:'—';
     return`<tr>
@@ -624,8 +694,13 @@ function renderTxns(){
       <td>${fmt(t.shares)}</td><td>${n2(t.price)} ${cur}</td>
       <td style="color:var(--text2)">${t.fee?n2(t.fee):'—'}</td>
       <td>${n2(amount)} ${cur}</td><td>${rp}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="delTxn(${realIdx})" title="刪除此筆紀錄">刪</button></td>
     </tr>`;
   }).join('');
+}
+function delTxn(idx){
+  if(!confirm('確定刪除此交易紀錄？\n注意：持倉數量不會自動回退，請手動編輯持倉。'))return;
+  txns.splice(idx,1);S.set('txns',txns);renderTxns();renderMonthlySummary();
 }
 
 // ── FX PnL ────────────────────────────────────────────────────
@@ -682,16 +757,17 @@ function updateTotals(twVal,usVal,bankVal){
   const upnl=investVal-investCost,upnlPct=investCost>0?upnl/investCost*100:0;
   const rpnl=txns.reduce((s,t)=>s+(t.realizedPnl||0)*(t.market==='US'?usdRate:1),0);
   const fxPnl=calcFxPnl();
+  const bankPct=total>0?(bankVal||0)/total*100:0;
   document.getElementById('c-total').textContent=twd(total);
-  document.getElementById('c-total-sub').textContent=`台股+美股+存款`;
+  document.getElementById('c-total-sub').textContent=`台股 ＋ 美股 ＋ 存款`;
   document.getElementById('c-upnl').textContent=(upnl>=0?'+':'')+twd(upnl);
-  document.getElementById('c-upnl').className=`card-value ${upnl>=0?'pos':'neg'}`;
-  document.getElementById('c-upnl-pct').textContent=`${upnlPct>=0?'+':''}${upnlPct.toFixed(2)}%`;
+  document.getElementById('c-upnl').className=`hero-pnl-val ${upnl>=0?'pos':'neg'}`;
+  document.getElementById('c-upnl-pct').textContent=`${upnlPct>=0?'+':''}${upnlPct.toFixed(2)}%　報酬率`;
+  document.getElementById('c-bank-pct').textContent=`佔總資產 ${bankPct.toFixed(1)}%`;
   document.getElementById('c-rpnl').textContent=(rpnl>=0?'+':'')+twd(rpnl);
-  document.getElementById('c-rpnl').className=`card-value ${rpnl>=0?'pos':'neg'}`;
+  document.getElementById('c-rpnl').className=`metric-val ${rpnl>=0?'pos':'neg'}`;
   document.getElementById('c-fx').textContent=(fxPnl>=0?'+':'')+twd(fxPnl);
-  document.getElementById('c-fx').className=`card-value ${fxPnl>=0?'pos':'neg'}`;
-  document.getElementById('c-fx-sub').textContent=fxPnl!==0?`匯差${fxPnl>=0?'獲利':'虧損'}`:'—';
+  document.getElementById('c-fx').className=`metric-val ${fxPnl>=0?'pos':'neg'}`;
   const today=new Date().toISOString().slice(0,10);
   if(total>0){const last=hist[hist.length-1];if(!last||last.date!==today)hist.push({date:today,total:Math.round(total)});else last.total=Math.round(total);if(hist.length>365)hist.shift();S.set('hist',hist);}
   renderDonut(twVal||0,usVal||0,bankVal||0);
