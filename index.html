@@ -951,6 +951,18 @@ function openTrade(type,market,idx){
   const cur=market==='tw'?'TWD':'USD';const label=type==='BUY'?'買進':'賣出';
   const btnCls=type==='BUY'?'btn-success':'btn-danger';
   const feeNote=market==='tw'?(type==='BUY'?'手續費 0.1425%':'手續費 0.1425% + 交易稅 0.3%'):'手續費（選填）';
+  // 扣款帳戶下拉（僅 BUY 顯示）
+  const bankOpts=bank.length
+    ?`<option value="">不扣款</option>`+bank.map((b,i)=>{
+        const isCathay=/國泰|cathay/i.test(b.bankName);
+        return`<option value="${i}"${isCathay?' selected':''}>${b.bankName}（${b.currency||'TWD'} ${n2(b.originalAmount||b.amount)}）</option>`;
+      }).join('')
+    :'<option value="">無帳戶</option>';
+  const bankRow=type==='BUY'?`
+    <div class="fg"><label>扣款帳戶（選填）</label>
+      <select id="f-bank-idx">${bankOpts}</select>
+    </div>
+    <div id="deduct-preview" style="font-size:12px;color:var(--yellow);margin-top:-6px;"></div>`:'';
   openModal(`${label}｜${h.ticker} ${h.name||''}`,`
     <div class="info-box">持有 <b>${fmt(h.shares)}</b> 股 ／ 均價 <b>${n2(h.avgPrice)} ${cur}</b> ／ 成本 <b>${n2(h.shares*h.avgPrice)} ${cur}</b></div>
     <div class="row2">
@@ -959,8 +971,9 @@ function openTrade(type,market,idx){
     </div>
     <div class="fg"><label>日期</label><input id="f-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
     <div class="fg"><label>${feeNote}</label><input id="f-fee" type="number" step="0.01" placeholder="自動計算"></div>
+    ${bankRow}
     <div id="trade-preview" style="font-size:12px;color:var(--text2);margin-top:4px;">填入股數與價格後自動計算</div>`,label,btnCls);
-  setTimeout(()=>['f-shares','f-price'].forEach(id=>document.getElementById(id)?.addEventListener('input',updateTradePreview)),50);
+  setTimeout(()=>['f-shares','f-price','f-bank-idx'].forEach(id=>document.getElementById(id)?.addEventListener('input',updateTradePreview)),50);
 }
 function updateTradePreview(){
   const{market,idx,tradeType}=_modal;
@@ -978,6 +991,15 @@ function updateTradePreview(){
   if(tradeType==='BUY'){
     const ns=h.shares+shares,na=(h.shares*h.avgPrice+amount)/ns;
     prev.innerHTML=`金額 <b>${n2(amount)} ${cur}</b>　手續費 <b>${n2(fee)}</b>　買後均價 <b>${n2(na)} ${cur}</b>`;
+    // 扣款預覽
+    const bIdx=parseInt(document.getElementById('f-bank-idx')?.value);
+    const dp=document.getElementById('deduct-preview');
+    if(dp&&!isNaN(bIdx)&&bank[bIdx]){
+      const b=bank[bIdx];
+      const deductTwd=(market==='tw'?amount+fee:(amount*usdRate)+fee);
+      const afterBal=b.amount-deductTwd;
+      dp.innerHTML=`扣款 <b>${twd(deductTwd)}</b> 從 ${b.bankName}，剩餘 <b>${twd(afterBal)}</b>`;
+    }else if(dp)dp.textContent='';
   }else{
     const realized=(price-h.avgPrice)*shares;const cls=realized>=0?'pos':'neg';
     prev.innerHTML=`金額 <b>${n2(amount)} ${cur}</b>　手續費 <b>${n2(fee)}</b>　已實現損益 <b class="${cls}">${realized>=0?'+':''}${n2(realized)} ${cur}</b>`;
@@ -1081,6 +1103,20 @@ function saveModal(){
       const na=parseFloat(((h.shares*h.avgPrice+amount)/ns).toFixed(6));
       arr[idx].shares=ns;arr[idx].avgPrice=na;
       txns.push({id:Date.now(),date,type:'BUY',market:market.toUpperCase(),ticker:h.ticker,name:h.name||'',shares,price,fee:parseFloat(fee.toFixed(2)),realizedPnl:null,usdRate:market==='us'?usdRate:null});
+      // 自動扣款
+      const bIdxStr=document.getElementById('f-bank-idx')?.value;
+      const bIdx=bIdxStr!==''&&bIdxStr!=null?parseInt(bIdxStr):NaN;
+      if(!isNaN(bIdx)&&bank[bIdx]){
+        const deductTwd=parseFloat((market==='tw'?amount+fee:(amount*usdRate)+fee).toFixed(2));
+        if(deductTwd>bank[bIdx].amount&&!confirm(`存款餘額不足（${twd(bank[bIdx].amount)}），仍要繼續記錄扣款？`)){}
+        bank[bIdx].amount=parseFloat((bank[bIdx].amount-deductTwd).toFixed(2));
+        if(bank[bIdx].currency&&bank[bIdx].currency!=='TWD'){
+          bank[bIdx].originalAmount=parseFloat((bank[bIdx].amount/(fxRates[bank[bIdx].currency]||1)).toFixed(4));
+        }
+        const note=`買進 ${h.ticker}${h.name?' '+h.name:''} ${fmt(shares)}股 @${n2(price)} ${market==='tw'?'TWD':'USD'}`;
+        bankTxns.push({id:Date.now(),date,bankName:bank[bIdx].bankName,type:'WITHDRAW',amount:deductTwd,note});
+        S.set('bank',bank);S.set('btxns',bankTxns);
+      }
     }else{
       if(shares>h.shares)return alert(`超過持有股數 ${fmt(h.shares)}`);
       const realized=parseFloat(((price-h.avgPrice)*shares).toFixed(4));
