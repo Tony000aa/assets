@@ -82,6 +82,11 @@ tr:hover td{background:rgba(255,255,255,.025);}
 .bank-note{font-size:11px;color:var(--text2);margin-top:2px;}
 .bank-amount{font-size:20px;font-weight:700;margin-bottom:8px;}
 .bank-acts{display:flex;gap:5px;}
+.bank-fx{font-size:12px;color:var(--text2);margin-top:2px;}
+.bank-orig{font-size:18px;font-weight:700;color:var(--yellow);}
+.bank-twd-eq{font-size:11px;color:var(--text2);margin-top:1px;}
+.fx-rates-bar{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0;margin-bottom:14px;font-size:12px;color:var(--text2);}
+.fx-rates-bar span{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;}
 .goal-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;}
 .goal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .goal-name{font-weight:700;font-size:15px;}
@@ -136,6 +141,7 @@ tr:hover td{background:rgba(255,255,255,.025);}
   <div class="hdr-r">
     <span id="last-update">—</span>
     <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ 刷新</button>
+    <button class="btn btn-outline btn-sm" id="save-btn" onclick="manualSave()">💾 儲存</button>
     <button class="btn btn-outline btn-sm" onclick="exportData()">⬇ 匯出</button>
     <label class="btn btn-outline btn-sm" style="cursor:pointer">⬆ 匯入<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
   </div>
@@ -291,6 +297,7 @@ tr:hover td{background:rgba(255,255,255,.025);}
         <button class="btn btn-sm" onclick="openAddModal('bank')">+ 新增帳戶</button>
       </div>
     </div>
+    <div class="fx-rates-bar" id="fx-rates-bar"></div>
     <div class="bank-grid" id="bank-grid">
       <div class="empty-hint" style="grid-column:1/-1">尚無帳戶</div>
     </div>
@@ -389,6 +396,8 @@ let dividends= S.get('divs')    || [];
 let goals    = S.get('goals')   || [];
 let hist     = S.get('hist')    || [];
 let usdRate  = S.get('usd_rate')|| 32.0;
+let fxRates  = S.get('fx_rates')|| {TWD:1,USD:32,JPY:0.22,EUR:35,AUD:20,HKD:4.1,SGD:24,GBP:41,CNY:4.4};
+const FX_PAIRS={USD:'USDTWD=X',JPY:'JPYTWD=X',EUR:'EURTWD=X',AUD:'AUDTWD=X',HKD:'HKDTWD=X',SGD:'SGDTWD=X',GBP:'GBPTWD=X',CNY:'CNYTWD=X'};
 let chartRange=30;
 let lineChart=null, donutChart=null;
 let _modal={mode:'',idx:-1};
@@ -413,11 +422,32 @@ async function yf(sym){
   }catch{}}
   return null;
 }
-async function fetchUsdRate(){
-  const d=await yf('USDTWD=X');
-  if(d&&d.price>20&&d.price<50){usdRate=parseFloat(d.price.toFixed(2));S.set('usd_rate',usdRate);}
+async function fetchFxRates(){
+  await Promise.all(Object.entries(FX_PAIRS).map(async([cur,sym])=>{
+    const d=await yf(sym);
+    if(d&&d.price>0){fxRates[cur]=parseFloat(d.price.toFixed(4));}
+  }));
+  fxRates.TWD=1;
+  S.set('fx_rates',fxRates);
+  usdRate=fxRates.USD||32;
+  S.set('usd_rate',usdRate);
   document.getElementById('c-rate').textContent=`USD/TWD ${usdRate.toFixed(2)}`;
   document.getElementById('b-rate').textContent=usdRate.toFixed(2);
+  // Update bank TWD amounts for foreign currency accounts
+  bank.forEach(b=>{
+    if(b.currency&&b.currency!=='TWD'&&b.originalAmount){
+      b.amount=parseFloat((b.originalAmount*(fxRates[b.currency]||1)).toFixed(2));
+    }
+  });
+  S.set('bank',bank);
+  // Show rate bar in bank tab
+  const bar=document.getElementById('fx-rates-bar');
+  if(bar){
+    const used=new Set(bank.map(b=>b.currency||'TWD').filter(c=>c!=='TWD'));
+    const always=['USD','JPY','EUR'];
+    const show=[...new Set([...always,...used])];
+    bar.innerHTML=show.map(c=>`<span>${c}/TWD　<b style="color:var(--text)">${(fxRates[c]||'—')}</b></span>`).join('');
+  }
 }
 async function fetchBenchmark(){
   const items=[
@@ -564,21 +594,29 @@ function renderBank(){
   document.getElementById('c-bank').textContent=twd(total);
   document.getElementById('bank-info').textContent=bank.length?`合計 ${twd(total)}`:'';
   if(!bank.length){grid.innerHTML='<div class="empty-hint" style="grid-column:1/-1">尚無帳戶</div>';return 0;}
-  grid.innerHTML=bank.map((b,i)=>`
-    <div class="bank-card">
+  grid.innerHTML=bank.map((b,i)=>{
+    const isFx=b.currency&&b.currency!=='TWD';
+    const amtDisplay=isFx
+      ?`<div class="bank-orig">${b.currency} ${n2(b.originalAmount)}</div><div class="bank-twd-eq">≈ ${twd(b.amount)}</div>`
+      :`<div class="bank-amount">${twd(b.amount)}</div>`;
+    return`<div class="bank-card">
       <div class="bank-top">
-        <div><div class="bank-name">${b.bankName}</div><div class="bank-note">${b.note||'活存'}</div></div>
+        <div>
+          <div class="bank-name">${b.bankName}</div>
+          <div class="bank-note">${b.note||'活存'}${isFx?` ・ ${b.currency} 外幣`:''}</div>
+        </div>
         <div class="act">
           <button class="btn btn-outline btn-sm" onclick="openEditBank(${i})">編</button>
           <button class="btn btn-danger btn-sm" onclick="delBank(${i})">刪</button>
         </div>
       </div>
-      <div class="bank-amount">${twd(b.amount)}</div>
-      <div class="bank-acts">
+      ${amtDisplay}
+      <div class="bank-acts" style="margin-top:8px">
         <button class="btn btn-success btn-sm" onclick="openBankTxn('DEPOSIT',${i})">＋ 存入</button>
         <button class="btn btn-danger btn-sm" onclick="openBankTxn('WITHDRAW',${i})">－ 提領</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   renderBankTxns();
   return total;
 }
@@ -793,9 +831,32 @@ function calcDCA(){
 }
 
 // ── Refresh All ───────────────────────────────────────────────
+function updateAmtLabel(){
+  const cur=document.getElementById('f-cur')?.value||'TWD';
+  const lbl=document.getElementById('f-amt-label');
+  if(lbl)lbl.textContent=`金額（${cur}）`;
+  updateFxPreview();
+}
+function updateFxPreview(){
+  const cur=document.getElementById('f-cur')?.value||'TWD';
+  const amt=parseFloat(document.getElementById('f-amount')?.value)||0;
+  const prev=document.getElementById('f-fx-preview');
+  if(!prev||cur==='TWD'||!amt)return;
+  const rate=fxRates[cur]||1;
+  prev.textContent=`≈ ${twd(amt*rate)}　（匯率 ${rate}）`;
+}
+function manualSave(){
+  S.set('tw_h',twH);S.set('us_h',usH);S.set('bank',bank);
+  S.set('txns',txns);S.set('btxns',bankTxns);S.set('divs',dividends);
+  S.set('goals',goals);S.set('hist',hist);S.set('fx_rates',fxRates);
+  const btn=document.getElementById('save-btn');
+  if(!btn)return;
+  btn.textContent='✓ 已儲存';btn.style.color='var(--green)';btn.style.borderColor='var(--green)';
+  setTimeout(()=>{btn.textContent='💾 儲存';btn.style.color='';btn.style.borderColor='';},2000);
+}
 async function refreshAll(){
   document.getElementById('last-update').textContent='更新中…';
-  await fetchUsdRate();
+  await fetchFxRates();
   const [twVal,usVal]=await Promise.all([renderTw(),renderUs()]);
   const bankVal=renderBank();
   renderDividends();renderTxns();renderMonthlySummary();
@@ -828,9 +889,26 @@ function openAddModal(type){
     <div class="row2"><div class="fg"><label>股數</label><input id="f-shares" type="number" step="0.001" placeholder="10"></div>
     <div class="fg"><label>均價（USD）</label><input id="f-avg" type="number" step="0.01" placeholder="500"></div></div>`);
   else openModal('新增帳戶',`
-    <div class="fg"><label>銀行名稱</label><input id="f-bank" placeholder="台灣銀行"></div>
-    <div class="fg"><label>備註</label><input id="f-note" placeholder="活存 / 定存 / 外幣"></div>
-    <div class="fg"><label>金額（TWD）</label><input id="f-amount" type="number" placeholder="500000"></div>`);
+    <div class="fg"><label>銀行名稱</label><input id="f-bank" placeholder="台灣銀行 / 兆豐 / 渣打"></div>
+    <div class="fg"><label>備註</label><input id="f-note" placeholder="活存 / 定存 / 美元帳戶"></div>
+    <div class="fg"><label>幣別</label>
+      <select id="f-cur" onchange="updateAmtLabel()">
+        <option value="TWD">TWD（台幣）</option>
+        <option value="USD">USD（美元）</option>
+        <option value="JPY">JPY（日幣）</option>
+        <option value="EUR">EUR（歐元）</option>
+        <option value="AUD">AUD（澳幣）</option>
+        <option value="HKD">HKD（港幣）</option>
+        <option value="SGD">SGD（新幣）</option>
+        <option value="GBP">GBP（英鎊）</option>
+        <option value="CNY">CNY（人民幣）</option>
+      </select>
+    </div>
+    <div class="fg"><label id="f-amt-label">金額（TWD）</label><input id="f-amount" type="number" placeholder="500000"></div>
+    <div id="f-fx-preview" style="font-size:12px;color:var(--text2);margin-top:-6px;"></div>`);
+  setTimeout(()=>{
+    document.getElementById('f-amount')?.addEventListener('input',updateFxPreview);
+  },50);
 }
 function openEditHolding(market,idx){
   _modal={mode:market+'-edit',idx};
@@ -843,10 +921,18 @@ function openEditHolding(market,idx){
 }
 function openEditBank(idx){
   _modal={mode:'bank-edit',idx};const b=bank[idx];
+  const bCur=b.currency||'TWD';const bOrig=b.originalAmount||b.amount;
   openModal('編輯帳戶',`
     <div class="fg"><label>銀行名稱</label><input id="f-bank" value="${b.bankName}"></div>
     <div class="fg"><label>備註</label><input id="f-note" value="${b.note||''}"></div>
-    <div class="fg"><label>金額（TWD）</label><input id="f-amount" type="number" value="${b.amount}"></div>`);
+    <div class="fg"><label>幣別</label>
+      <select id="f-cur" onchange="updateAmtLabel()">
+        ${['TWD','USD','JPY','EUR','AUD','HKD','SGD','GBP','CNY'].map(c=>`<option value="${c}"${c===bCur?' selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label id="f-amt-label">金額（${bCur}）</label><input id="f-amount" type="number" value="${bOrig}"></div>
+    <div id="f-fx-preview" style="font-size:12px;color:var(--text2);margin-top:-6px;"></div>`);
+  setTimeout(()=>{document.getElementById('f-amount')?.addEventListener('input',updateFxPreview);updateFxPreview();},50);
 }
 function openBankTxn(type,idx){
   _modal={mode:'bank-txn',txnType:type,idx};
@@ -952,16 +1038,22 @@ function saveModal(){
   }else if(mode==='bank-add'){
     const bankName=(document.getElementById('f-bank')?.value||'').trim();
     const note=(document.getElementById('f-note')?.value||'').trim();
-    const amount=parseFloat(document.getElementById('f-amount')?.value);
-    if(!bankName||!amount)return alert('請填寫銀行名稱與金額');
-    bank.push({id:Date.now(),bankName,note,amount});S.set('bank',bank);
+    const currency=document.getElementById('f-cur')?.value||'TWD';
+    const originalAmount=parseFloat(document.getElementById('f-amount')?.value);
+    if(!bankName||!originalAmount)return alert('請填寫銀行名稱與金額');
+    const rate=fxRates[currency]||1;
+    const amount=currency==='TWD'?originalAmount:parseFloat((originalAmount*rate).toFixed(2));
+    bank.push({id:Date.now(),bankName,note,currency,originalAmount,amount});S.set('bank',bank);
   }else if(mode==='bank-edit'){
     const{idx}=_modal;
     const bankName=(document.getElementById('f-bank')?.value||'').trim();
     const note=(document.getElementById('f-note')?.value||'').trim();
-    const amount=parseFloat(document.getElementById('f-amount')?.value);
-    if(!bankName||!amount)return alert('請填寫銀行名稱與金額');
-    bank[idx]={...bank[idx],bankName,note,amount};S.set('bank',bank);
+    const currency=document.getElementById('f-cur')?.value||'TWD';
+    const originalAmount=parseFloat(document.getElementById('f-amount')?.value);
+    if(!bankName||!originalAmount)return alert('請填寫銀行名稱與金額');
+    const rate=fxRates[currency]||1;
+    const amount=currency==='TWD'?originalAmount:parseFloat((originalAmount*rate).toFixed(2));
+    bank[idx]={...bank[idx],bankName,note,currency,originalAmount,amount};S.set('bank',bank);
   }else if(mode==='bank-txn'){
     const{txnType,idx}=_modal;
     const amount=parseFloat(document.getElementById('f-amount')?.value);
