@@ -405,11 +405,14 @@ let _modal={mode:'',idx:-1};
 let _twVals={}, _usVals={};
 
 // ── Price fetch ───────────────────────────────────────────────
-async function yf(sym){
+async function yf(sym,tw=false){
+  const base=tw
+    ?`?interval=1d&range=2d&lang=zh-TW&region=TW`
+    :`?interval=1d&range=2d`;
   const urls=[
-    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`,
-    `https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`,
-    `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2d`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}${base}`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${sym}${base}`,
+    `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${sym}${base}`,
   ];
   for(const u of urls){try{
     const r=await fetch(u,{signal:AbortSignal.timeout(8000)});
@@ -418,9 +421,17 @@ async function yf(sym){
     const res=j?.chart?.result?.[0];if(!res)continue;
     const m=res.meta,price=m.regularMarketPrice;if(!price)continue;
     const prev=m.chartPreviousClose||m.previousClose||price;
-    return{price,chg:(price-prev)/prev*100,name:m.shortName||m.symbol||sym};
+    // 台股優先取中文 longName
+    const name=m.longName||m.shortName||m.symbol||sym;
+    return{price,chg:(price-prev)/prev*100,name};
   }catch{}}
   return null;
+}
+// 台股專用：自動試 .TW（上市）和 .TWO（上櫃）
+async function fetchTwPrice(ticker){
+  const r=await yf(ticker+'.TW',true);
+  if(r)return r;
+  return await yf(ticker+'.TWO',true);
 }
 async function fetchFxRates(){
   await Promise.all(Object.entries(FX_PAIRS).map(async([cur,sym])=>{
@@ -486,7 +497,7 @@ async function renderTw(){
       <button class="btn btn-danger btn-sm" onclick="delHolding('tw',${i})">刪</button>
     </td></tr>`).join('');
   const res=await Promise.all(twH.map(async(h,i)=>{
-    const d=await yf(h.ticker+'.TW');
+    const d=await fetchTwPrice(h.ticker);
     const row=document.getElementById(`twr-${i}`);if(!row)return{val:0,cost:0};
     const cost=h.shares*h.avgPrice;
     // calc total fees paid (from txns)
