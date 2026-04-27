@@ -1135,18 +1135,19 @@ function openTrade(type,market,idx){
   const cur=market==='tw'?'TWD':'USD';const label=type==='BUY'?'買進':'賣出';
   const btnCls=type==='BUY'?'btn-success':'btn-danger';
   const feeNote=market==='tw'?(type==='BUY'?'手續費 0.1425%':'手續費 0.1425% + 交易稅 0.3%'):'手續費（選填）';
-  // 扣款帳戶下拉（僅 BUY 顯示）
+  // 扣款/入帳帳戶下拉
   const bankOpts=bank.length
-    ?`<option value="">不扣款</option>`+bank.map((b,i)=>{
+    ?`<option value="">不連動</option>`+bank.map((b,i)=>{
         const isCathay=/國泰|cathay/i.test(b.bankName);
         return`<option value="${i}"${isCathay?' selected':''}>${b.bankName}（${b.currency||'TWD'} ${n2(b.originalAmount||b.amount)}）</option>`;
       }).join('')
     :'<option value="">無帳戶</option>';
-  const bankRow=type==='BUY'?`
-    <div class="fg"><label>扣款帳戶（選填）</label>
+  const bankLabel=type==='BUY'?'扣款帳戶（選填）':'入帳帳戶（選填）';
+  const bankRow=`
+    <div class="fg"><label>${bankLabel}</label>
       <select id="f-bank-idx">${bankOpts}</select>
     </div>
-    <div id="deduct-preview" style="font-size:12px;color:var(--yellow);margin-top:-6px;"></div>`:'';
+    <div id="deduct-preview" style="font-size:12px;color:var(--yellow);margin-top:-6px;"></div>`;
   openModal(`${label}｜${h.ticker} ${h.name||''}`,`
     <div class="info-box">持有 <b>${fmt(h.shares)}</b> 股 ／ 均價 <b>${n2(h.avgPrice)} ${cur}</b> ／ 成本 <b>${n2(h.shares*h.avgPrice)} ${cur}</b></div>
     <div class="row2">
@@ -1187,6 +1188,15 @@ function updateTradePreview(){
   }else{
     const realized=(price-h.avgPrice)*shares;const cls=realized>=0?'pos':'neg';
     prev.innerHTML=`金額 <b>${n2(amount)} ${cur}</b>　手續費 <b>${n2(fee)}</b>　已實現損益 <b class="${cls}">${realized>=0?'+':''}${n2(realized)} ${cur}</b>`;
+    // 入帳預覽
+    const bIdx=parseInt(document.getElementById('f-bank-idx')?.value);
+    const dp=document.getElementById('deduct-preview');
+    if(dp&&!isNaN(bIdx)&&bank[bIdx]){
+      const b=bank[bIdx];
+      const depositTwd=(market==='tw'?amount-fee:(amount*usdRate)-fee);
+      const afterBal=b.amount+depositTwd;
+      dp.innerHTML=`存入 <b style="color:var(--green)">${twd(depositTwd)}</b> 到 ${b.bankName}，餘額變為 <b>${twd(afterBal)}</b>`;
+    }else if(dp)dp.textContent='';
   }
 }
 
@@ -1324,6 +1334,19 @@ function saveModal(){
       const ns=parseFloat((h.shares-shares).toFixed(6));
       if(ns<=0.0001)arr.splice(idx,1);else arr[idx].shares=ns;
       txns.push({id:Date.now(),date,type:'SELL',market:market.toUpperCase(),ticker:h.ticker,name:h.name||'',shares,price,fee:parseFloat(fee.toFixed(2)),realizedPnl:realized,usdRate:market==='us'?usdRate:null});
+      // 自動存入帳戶
+      const bIdxStr=document.getElementById('f-bank-idx')?.value;
+      const bIdx=bIdxStr!==''&&bIdxStr!=null?parseInt(bIdxStr):NaN;
+      if(!isNaN(bIdx)&&bank[bIdx]){
+        const depositTwd=parseFloat((market==='tw'?amount-fee:(amount*usdRate)-fee).toFixed(2));
+        bank[bIdx].amount=parseFloat((bank[bIdx].amount+depositTwd).toFixed(2));
+        if(bank[bIdx].currency&&bank[bIdx].currency!=='TWD'){
+          bank[bIdx].originalAmount=parseFloat((bank[bIdx].amount/(fxRates[bank[bIdx].currency]||1)).toFixed(4));
+        }
+        const note=`賣出 ${h.ticker}${h.name?' '+h.name:''} ${fmt(shares)}股 @${n2(price)} ${market==='tw'?'TWD':'USD'}`;
+        bankTxns.push({id:Date.now(),date,bankName:bank[bIdx].bankName,type:'DEPOSIT',amount:depositTwd,note});
+        S.set('bank',bank);S.set('btxns',bankTxns);
+      }
     }
     S.set(key,arr);S.set('txns',txns);
   }else if(mode==='goal'){
