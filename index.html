@@ -143,6 +143,15 @@ tr.drag-over td{border-top:2px solid var(--blue);}
 .metric-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;}
 .metric-label{font-size:11px;color:var(--text2);margin-bottom:4px;}
 .metric-val{font-size:16px;font-weight:700;}
+/* Sort bar */
+.sort-bar{display:flex;align-items:center;gap:5px;margin-bottom:8px;font-size:12px;color:var(--text2);flex-wrap:wrap;}
+.sort-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:4px;padding:2px 9px;font-size:11px;cursor:pointer;transition:all .15s;}
+.sort-btn:hover{color:var(--text);border-color:var(--text2);}
+.sort-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+/* Action expand row */
+.action-row td{padding:8px 14px!important;background:var(--bg3)!important;}
+.action-expand{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+tr[onclick]{cursor:pointer;}
 /* Alert styles */
 .al-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;vertical-align:middle;margin-left:4px;line-height:1;}
 .al-stop{background:rgba(248,81,73,.18);color:var(--red);}
@@ -288,9 +297,16 @@ tr.alert-profit{background:rgba(63,185,80,.05)!important;box-shadow:inset 3px 0 
       </div>
     </div>
     <table>
+    <div class="sort-bar" id="tw-sort-bar">
+      排序：
+      <button class="sort-btn" id="tw-sort-value" onclick="setSort('tw','value')">市值</button>
+      <button class="sort-btn" id="tw-sort-pnl" onclick="setSort('tw','pnl')">損益%</button>
+      <button class="sort-btn" id="tw-sort-name" onclick="setSort('tw','name')">名稱</button>
+      <button class="sort-btn" id="tw-sort-none" onclick="setSort('tw','')">預設↕</button>
+    </div>
       <thead><tr>
         <th class="mob-hide" style="width:20px"></th><th>代號／名稱</th><th>現價</th><th>今日%</th><th class="mob-hide">股數</th><th class="mob-hide">均價</th>
-        <th class="mob-hide">成本</th><th class="mob-hide">市值</th><th>損益</th><th>損益%</th><th class="mob-hide">手續費</th><th>操作</th>
+        <th class="mob-hide">成本</th><th class="mob-hide">市值</th><th>損益</th><th>損益%</th><th class="mob-hide">手續費</th><th style="width:16px"></th>
       </tr></thead>
       <tbody id="tw-body"><tr><td colspan="12" class="empty-hint">尚無台股</td></tr></tbody>
     </table>
@@ -305,9 +321,16 @@ tr.alert-profit{background:rgba(63,185,80,.05)!important;box-shadow:inset 3px 0 
       </div>
     </div>
     <table>
+    <div class="sort-bar">
+      排序：
+      <button class="sort-btn" id="us-sort-value" onclick="setSort('us','value')">市值</button>
+      <button class="sort-btn" id="us-sort-pnl" onclick="setSort('us','pnl')">損益%</button>
+      <button class="sort-btn" id="us-sort-name" onclick="setSort('us','name')">名稱</button>
+      <button class="sort-btn" id="us-sort-none" onclick="setSort('us','')">預設↕</button>
+    </div>
       <thead><tr>
         <th class="mob-hide" style="width:20px"></th><th>代號／名稱</th><th>現價(USD)</th><th>今日%</th><th class="mob-hide">股數</th><th class="mob-hide">均價</th>
-        <th class="mob-hide">成本(USD)</th><th class="mob-hide">市值(TWD)</th><th>損益(USD)</th><th>損益%</th><th class="mob-hide">匯率損益</th><th>操作</th>
+        <th class="mob-hide">成本(USD)</th><th class="mob-hide">市值(TWD)</th><th>損益(USD)</th><th>損益%</th><th class="mob-hide">匯率損益</th><th style="width:16px"></th>
       </tr></thead>
       <tbody id="us-body"><tr><td colspan="12" class="empty-hint">尚無美股</td></tr></tbody>
     </table>
@@ -451,6 +474,7 @@ let usdRate  = S.get('usd_rate')|| 32.0;
 let fxRates  = S.get('fx_rates')|| {TWD:1,USD:32,JPY:0.22,EUR:35,AUD:20,HKD:4.1,SGD:24,GBP:41,CNY:4.4};
 const FX_PAIRS={USD:'USDTWD=X',JPY:'JPYTWD=X',EUR:'EURTWD=X',AUD:'AUDTWD=X',HKD:'HKDTWD=X',SGD:'SGDTWD=X',GBP:'GBPTWD=X',CNY:'CNYTWD=X'};
 let stockAlerts = S.get('stock_alerts') || {};
+let twSort={field:'',dir:-1}, usSort={field:'',dir:-1};
 let chartRange=30;
 let lineChart=null, donutChart=null;
 let _modal={mode:'',idx:-1};
@@ -460,31 +484,53 @@ let _twVals={}, _usVals={};
 // ── Price fetch ───────────────────────────────────────────────
 async function yf(sym,tw=false){
   const base=tw
-    ?`?interval=1d&range=2d&lang=zh-TW&region=TW`
-    :`?interval=1d&range=2d`;
+    ?`?interval=1d&range=1d&lang=zh-TW&region=TW`
+    :`?interval=1d&range=1d`;
+  const bust=`&_=${Date.now()}`;
   const urls=[
-    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}${base}`,
-    `https://query2.finance.yahoo.com/v8/finance/chart/${sym}${base}`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}${base}${bust}`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${sym}${base}${bust}`,
     `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${sym}${base}`,
   ];
   for(const u of urls){try{
-    const r=await fetch(u,{signal:AbortSignal.timeout(8000)});
+    const r=await fetch(u,{signal:AbortSignal.timeout(8000),cache:'no-store'});
     if(!r.ok)continue;
     const j=await r.json();
     const res=j?.chart?.result?.[0];if(!res)continue;
     const m=res.meta,price=m.regularMarketPrice;if(!price)continue;
     const prev=m.chartPreviousClose||m.previousClose||price;
-    // 台股優先取中文 longName
     const name=m.longName||m.shortName||m.symbol||sym;
     return{price,chg:(price-prev)/prev*100,name};
   }catch{}}
   return null;
 }
-// 台股專用：自動試 .TW（上市）和 .TWO（上櫃）
+// 台股抓中文名稱
+async function getTwChineseName(ticker){
+  const isCn=s=>/[\u4e00-\u9fa5]/.test(s);
+  const urls=[
+    `https://query1.finance.yahoo.com/v1/finance/search?q=${ticker}.TW&lang=zh-TW&region=TW&quotesCount=3`,
+    `https://corsproxy.io/?https://query1.finance.yahoo.com/v1/finance/search?q=${ticker}.TW&lang=zh-TW&region=TW&quotesCount=3`,
+  ];
+  for(const url of urls){try{
+    const r=await fetch(url,{signal:AbortSignal.timeout(6000),cache:'no-store'});
+    const j=await r.json();
+    for(const q of(j?.quotes||[])){
+      if(isCn(q?.longname||''))return q.longname;
+      if(isCn(q?.shortname||''))return q.shortname;
+    }
+  }catch{}}
+  return null;
+}
+// 台股專用：自動試 .TW（上市）和 .TWO（上櫃），並補抓中文名
 async function fetchTwPrice(ticker){
-  const r=await yf(ticker+'.TW',true);
-  if(r)return r;
-  return await yf(ticker+'.TWO',true);
+  const isCn=s=>/[\u4e00-\u9fa5]/.test(s);
+  let r=await yf(ticker+'.TW',true)||await yf(ticker+'.TWO',true);
+  if(!r)return null;
+  if(!isCn(r.name)){
+    const cn=await getTwChineseName(ticker);
+    if(cn)r.name=cn;
+  }
+  return r;
 }
 async function fetchFxRates(){
   await Promise.all(Object.entries(FX_PAIRS).map(async([cur,sym])=>{
@@ -542,16 +588,17 @@ let _drag={src:-1,market:''};
 function twRowHtml(h,i,d,paidFee){
   const cost=h.shares*h.avgPrice;
   const al=stockAlerts[h.ticker]||{};
-  const handle=`<td class="mob-hide"><span class="drag-handle" title="拖曳排序">⠿</span></td>`;
+  const handle=`<td class="mob-hide" onclick="event.stopPropagation()"><span class="drag-handle" title="拖曳排序">⠿</span></td>`;
   let alertClass='',alertBadge='';
   if(d?.price&&al.stopLoss&&d.price<=al.stopLoss){alertClass='alert-stop';alertBadge=`<span class="al-badge al-stop">停損</span>`;}
   else if(d?.price&&al.takeProfit&&d.price>=al.takeProfit){alertClass='alert-profit';alertBadge=`<span class="al-badge al-profit">停利</span>`;}
-  const alIco=al.stopLoss||al.takeProfit?'🔔':'🔕';
   const nameCol=`<td style="text-align:left"><div class="ticker">${h.ticker}${alertBadge}</div><div class="name-cell">${h.name||''}</div></td>`;
-  if(!d?.price) return `<tr id="twr-${i}" draggable="true" class="${alertClass}">${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td class="mob-hide">${fmt(h.shares)}</td><td class="mob-hide">${n2(h.avgPrice)}</td><td class="mob-hide">${twd(cost)}</td><td class="mob-hide">—</td><td>—</td><td>—</td><td class="mob-hide">—</td><td class="act"><button class="btn btn-success btn-sm" onclick="openTrade('BUY','tw',${i})">買</button><button class="btn btn-danger btn-sm" onclick="openTrade('SELL','tw',${i})">賣</button><button class="btn btn-outline btn-sm" onclick="openAlertModal('tw','${h.ticker}',0)">${alIco}</button><button class="btn btn-outline btn-sm" onclick="openEditHolding('tw',${i})">編</button><button class="btn btn-danger btn-sm" onclick="delHolding('tw',${i})">刪</button></td></tr>`;
+  const expTd=`<td style="width:16px;text-align:center;color:var(--text2);font-size:11px;padding:0 2px">▾</td>`;
+  const onclick=`onclick="toggleActionRow('tw',${i})"`;
+  if(!d?.price) return `<tr id="twr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td class="mob-hide">${fmt(h.shares)}</td><td class="mob-hide">${n2(h.avgPrice)}</td><td class="mob-hide">${twd(cost)}</td><td class="mob-hide">—</td><td>—</td><td>—</td><td class="mob-hide">—</td>${expTd}</tr>`;
   const val=h.shares*d.price,pnl=val-cost,pp=cost>0?pnl/cost*100:0;
   const cc=d.chg>=0?'pos':'neg',pc=pnl>=0?'pos':'neg';
-  return`<tr id="twr-${i}" draggable="true" class="${alertClass}">${handle}
+  return`<tr id="twr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}
     ${nameCol}
     <td>${n2(d.price)}</td><td class="${cc}">${d.chg>=0?'+':''}${d.chg.toFixed(2)}%</td>
     <td class="mob-hide">${fmt(h.shares)}</td><td class="mob-hide">${n2(h.avgPrice)}</td>
@@ -559,27 +606,22 @@ function twRowHtml(h,i,d,paidFee){
     <td class="${pc}">${pnl>=0?'+':''}${twd(pnl)}</td>
     <td class="${pc}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
     <td class="mob-hide" style="color:var(--text2)">${twd(paidFee)}</td>
-    <td class="act">
-      <button class="btn btn-success btn-sm" onclick="openTrade('BUY','tw',${i})">買</button>
-      <button class="btn btn-danger btn-sm" onclick="openTrade('SELL','tw',${i})">賣</button>
-      <button class="btn btn-outline btn-sm" onclick="openAlertModal('tw','${h.ticker}',${d.price})">${alIco}</button>
-      <button class="btn btn-outline btn-sm" onclick="openEditHolding('tw',${i})">編</button>
-      <button class="btn btn-danger btn-sm" onclick="delHolding('tw',${i})">刪</button>
-    </td></tr>`;
+    ${expTd}</tr>`;
 }
 function usRowHtml(h,i,d,fxPnl){
   const cost=h.shares*h.avgPrice,costTwd=cost*usdRate;
   const al=stockAlerts[h.ticker]||{};
-  const handle=`<td class="mob-hide"><span class="drag-handle" title="拖曳排序">⠿</span></td>`;
+  const handle=`<td class="mob-hide" onclick="event.stopPropagation()"><span class="drag-handle" title="拖曳排序">⠿</span></td>`;
   let alertClass='',alertBadge='';
   if(d?.price&&al.stopLoss&&d.price<=al.stopLoss){alertClass='alert-stop';alertBadge=`<span class="al-badge al-stop">停損</span>`;}
   else if(d?.price&&al.takeProfit&&d.price>=al.takeProfit){alertClass='alert-profit';alertBadge=`<span class="al-badge al-profit">停利</span>`;}
-  const alIco=al.stopLoss||al.takeProfit?'🔔':'🔕';
   const nameCol=`<td style="text-align:left"><div class="ticker">${h.ticker}${alertBadge}</div><div class="name-cell">${h.name||''}</div></td>`;
-  if(!d?.price) return `<tr id="usr-${i}" draggable="true" class="${alertClass}">${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td class="mob-hide">${h.shares}</td><td class="mob-hide">$${n2(h.avgPrice)}</td><td class="mob-hide">$${n2(cost)}</td><td class="mob-hide">—</td><td>—</td><td>—</td><td class="mob-hide">—</td><td class="act"><button class="btn btn-success btn-sm" onclick="openTrade('BUY','us',${i})">買</button><button class="btn btn-danger btn-sm" onclick="openTrade('SELL','us',${i})">賣</button><button class="btn btn-outline btn-sm" onclick="openAlertModal('us','${h.ticker}',0)">${alIco}</button><button class="btn btn-outline btn-sm" onclick="openEditHolding('us',${i})">編</button><button class="btn btn-danger btn-sm" onclick="delHolding('us',${i})">刪</button></td></tr>`;
+  const expTd=`<td style="width:16px;text-align:center;color:var(--text2);font-size:11px;padding:0 2px">▾</td>`;
+  const onclick=`onclick="toggleActionRow('us',${i})"`;
+  if(!d?.price) return `<tr id="usr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td class="mob-hide">${h.shares}</td><td class="mob-hide">$${n2(h.avgPrice)}</td><td class="mob-hide">$${n2(cost)}</td><td class="mob-hide">—</td><td>—</td><td>—</td><td class="mob-hide">—</td>${expTd}</tr>`;
   const val=h.shares*d.price,valTwd=val*usdRate,pnl=val-cost,pp=cost>0?pnl/cost*100:0;
   const cc=d.chg>=0?'pos':'neg',pc=pnl>=0?'pos':'neg',fc=(fxPnl||0)>=0?'pos':'neg';
-  return`<tr id="usr-${i}" draggable="true" class="${alertClass}">${handle}
+  return`<tr id="usr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}
     ${nameCol}
     <td>$${n2(d.price)}</td><td class="${cc}">${d.chg>=0?'+':''}${d.chg.toFixed(2)}%</td>
     <td class="mob-hide">${h.shares}</td><td class="mob-hide">$${n2(h.avgPrice)}</td>
@@ -587,14 +629,72 @@ function usRowHtml(h,i,d,fxPnl){
     <td class="${pc}">$${pnl>=0?'+':''}${n2(pnl)}</td>
     <td class="${pc}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
     <td class="mob-hide ${fc}">${(fxPnl||0)>=0?'+':''}${twd(fxPnl||0)}</td>
-    <td class="act">
-      <button class="btn btn-success btn-sm" onclick="openTrade('BUY','us',${i})">買</button>
-      <button class="btn btn-danger btn-sm" onclick="openTrade('SELL','us',${i})">賣</button>
-      <button class="btn btn-outline btn-sm" onclick="openAlertModal('us','${h.ticker}',${d.price})">${alIco}</button>
-      <button class="btn btn-outline btn-sm" onclick="openEditHolding('us',${i})">編</button>
-      <button class="btn btn-danger btn-sm" onclick="delHolding('us',${i})">刪</button>
-    </td></tr>`;
+    ${expTd}</tr>`;
 }
+// ── Row expand / action panel ──────────────────────────────────
+function toggleActionRow(market,idx){
+  const actionId=`action-${market}-${idx}`;
+  const existing=document.getElementById(actionId);
+  if(existing){existing.remove();return;}
+  document.querySelectorAll('.action-row').forEach(r=>r.remove());
+  const rowId=(market==='tw'?'twr-':'usr-')+idx;
+  const row=document.getElementById(rowId);if(!row)return;
+  const h=market==='tw'?twH[idx]:usH[idx];
+  const cache=market==='tw'?_twCache:_usCache;
+  const price=cache[h.ticker]?.price||0;
+  const al=stockAlerts[h.ticker]||{};
+  const alIco=al.stopLoss||al.takeProfit?'🔔':'🔕';
+  const ar=document.createElement('tr');
+  ar.id=actionId;ar.className='action-row';
+  ar.innerHTML=`<td colspan="12"><div class="action-expand">
+    <button class="btn btn-success btn-sm" onclick="openTrade('BUY','${market}',${idx})">📈 買進</button>
+    <button class="btn btn-danger btn-sm" onclick="openTrade('SELL','${market}',${idx})">📉 賣出</button>
+    <button class="btn btn-outline btn-sm" onclick="openAlertModal('${market}','${h.ticker}',${price})">${alIco} 提醒</button>
+    <button class="btn btn-outline btn-sm" onclick="openEditHolding('${market}',${idx})">✏️ 編輯</button>
+    <button class="btn btn-danger btn-sm" onclick="delHolding('${market}',${idx})">🗑️ 刪除</button>
+  </div></td>`;
+  row.after(ar);
+}
+
+// ── Sort ───────────────────────────────────────────────────────
+function setSort(market,field){
+  const s=market==='tw'?twSort:usSort;
+  if(s.field===field)s.dir*=-1;
+  else{s.field=field;s.dir=field==='name'?1:-1;}
+  if(market==='tw')twSort=s;else usSort=s;
+  // update button styles
+  ['value','pnl','name',''].forEach(f=>{
+    const btn=document.getElementById(`${market}-sort-${f||'none'}`);
+    if(btn)btn.classList.toggle('active',f===field);
+    if(btn&&f===field)btn.textContent={value:'市值',pnl:'損益%',name:'名稱','':'預設↕'}[f]+(field?s.dir>0?' ↑':' ↓':'');
+    else if(btn)btn.textContent={value:'市值',pnl:'損益%',name:'名稱','':'預設↕'}[f];
+  });
+  document.querySelectorAll('.action-row').forEach(r=>r.remove());
+  renderFromCache(market);
+}
+function getSortedIndices(market){
+  const arr=market==='tw'?twH:usH;
+  const cache=market==='tw'?_twCache:_usCache;
+  const sort=market==='tw'?twSort:usSort;
+  const idx=arr.map((_,i)=>i);
+  if(!sort.field)return idx;
+  return idx.sort((a,b)=>{
+    const ha=arr[a],hb=arr[b],da=cache[ha.ticker],db=cache[hb.ticker];
+    if(sort.field==='value'){
+      const v=(h,d)=>d?.price?h.shares*d.price*(market==='us'?usdRate:1):h.shares*h.avgPrice*(market==='us'?usdRate:1);
+      return sort.dir*(v(hb,db)-v(ha,da));
+    }
+    if(sort.field==='pnl'){
+      const p=(h,d)=>{const c=h.shares*h.avgPrice;const v=d?.price?h.shares*d.price:c;return c>0?(v-c)/c*100:0;};
+      return sort.dir*(p(hb,db)-p(ha,da));
+    }
+    if(sort.field==='name'){
+      return sort.dir*(ha.name||ha.ticker).localeCompare(hb.name||hb.ticker,'zh-TW');
+    }
+    return 0;
+  });
+}
+
 function bindRowDrag(market){
   const pfx=market==='tw'?'twr-':'usr-';
   const arr=market==='tw'?twH:usH;
@@ -617,13 +717,16 @@ function renderFromCache(market){
   const tb=document.getElementById(market==='tw'?'tw-body':'us-body');
   const arr=market==='tw'?twH:usH;
   const cache=market==='tw'?_twCache:_usCache;
+  const indices=getSortedIndices(market);
   if(market==='tw'){
-    tb.innerHTML=arr.map((h,i)=>{
+    tb.innerHTML=indices.map(i=>{
+      const h=arr[i];
       const paidFee=txns.filter(t=>t.ticker===h.ticker&&t.market==='TW').reduce((s,t)=>s+(t.fee||0),0);
       return twRowHtml(h,i,cache[h.ticker],paidFee);
     }).join('');
   }else{
-    tb.innerHTML=arr.map((h,i)=>{
+    tb.innerHTML=indices.map(i=>{
+      const h=arr[i];
       const buyTxns=txns.filter(t=>t.ticker===h.ticker&&t.market==='US'&&t.type==='BUY');
       const totalUsd=buyTxns.reduce((s,t)=>s+t.shares*t.price,0);
       const avgRate=totalUsd>0?buyTxns.reduce((s,t)=>s+t.shares*t.price*(t.usdRate||usdRate),0)/totalUsd:usdRate;
