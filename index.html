@@ -143,15 +143,21 @@ tr.drag-over td{border-top:2px solid var(--blue);}
 .metric-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;}
 .metric-label{font-size:11px;color:var(--text2);margin-bottom:4px;}
 .metric-val{font-size:16px;font-weight:700;}
+/* Tappable rows */
+tr[onclick]{cursor:pointer;-webkit-tap-highlight-color:rgba(88,166,255,.12);touch-action:manipulation;}
+tr[onclick]:active td{background:rgba(88,166,255,.07)!important;}
 /* Sort bar */
 .sort-bar{display:flex;align-items:center;gap:5px;margin-bottom:8px;font-size:12px;color:var(--text2);flex-wrap:wrap;}
 .sort-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:4px;padding:2px 9px;font-size:11px;cursor:pointer;transition:all .15s;}
 .sort-btn:hover{color:var(--text);border-color:var(--text2);}
 .sort-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 /* Action expand row */
-.action-row td{padding:8px 14px!important;background:var(--bg3)!important;}
-.action-expand{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
-tr[onclick]{cursor:pointer;}
+.action-row td{padding:10px 12px!important;background:var(--bg3)!important;border-top:none!important;}
+.action-expand{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+@media(max-width:640px){
+  .action-expand .btn{padding:7px 13px;font-size:12px;}
+  .action-expand{gap:8px;}
+}
 /* Alert styles */
 .al-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;vertical-align:middle;margin-left:4px;line-height:1;}
 .al-stop{background:rgba(248,81,73,.18);color:var(--red);}
@@ -593,8 +599,8 @@ function twRowHtml(h,i,d,paidFee){
   if(d?.price&&al.stopLoss&&d.price<=al.stopLoss){alertClass='alert-stop';alertBadge=`<span class="al-badge al-stop">停損</span>`;}
   else if(d?.price&&al.takeProfit&&d.price>=al.takeProfit){alertClass='alert-profit';alertBadge=`<span class="al-badge al-profit">停利</span>`;}
   const nameCol=`<td style="text-align:left"><div class="ticker">${h.ticker}${alertBadge}</div><div class="name-cell">${h.name||''}</div></td>`;
-  const expTd=`<td style="width:16px;text-align:center;color:var(--text2);font-size:11px;padding:0 2px">▾</td>`;
-  const onclick=`onclick="toggleActionRow('tw',${i})"`;
+  const expTd=`<td style="width:20px;text-align:center;color:var(--text2);font-size:13px;padding:0 3px">▾</td>`;
+  const onclick=`onclick="toggleActionRow('tw',${i})" ontouchend="event.preventDefault();toggleActionRow('tw',${i})"`;
   if(!d?.price) return `<tr id="twr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td class="mob-hide">${fmt(h.shares)}</td><td class="mob-hide">${n2(h.avgPrice)}</td><td class="mob-hide">${twd(cost)}</td><td class="mob-hide">—</td><td>—</td><td>—</td><td class="mob-hide">—</td>${expTd}</tr>`;
   const val=h.shares*d.price,pnl=val-cost,pp=cost>0?pnl/cost*100:0;
   const cc=d.chg>=0?'pos':'neg',pc=pnl>=0?'pos':'neg';
@@ -616,8 +622,8 @@ function usRowHtml(h,i,d,fxPnl){
   if(d?.price&&al.stopLoss&&d.price<=al.stopLoss){alertClass='alert-stop';alertBadge=`<span class="al-badge al-stop">停損</span>`;}
   else if(d?.price&&al.takeProfit&&d.price>=al.takeProfit){alertClass='alert-profit';alertBadge=`<span class="al-badge al-profit">停利</span>`;}
   const nameCol=`<td style="text-align:left"><div class="ticker">${h.ticker}${alertBadge}</div><div class="name-cell">${h.name||''}</div></td>`;
-  const expTd=`<td style="width:16px;text-align:center;color:var(--text2);font-size:11px;padding:0 2px">▾</td>`;
-  const onclick=`onclick="toggleActionRow('us',${i})"`;
+  const expTd=`<td style="width:20px;text-align:center;color:var(--text2);font-size:13px;padding:0 3px">▾</td>`;
+  const onclick=`onclick="toggleActionRow('us',${i})" ontouchend="event.preventDefault();toggleActionRow('us',${i})"`;
   if(!d?.price) return `<tr id="usr-${i}" draggable="true" class="${alertClass}" ${onclick}>${handle}${nameCol}<td><span class="price-err">無法取得</span></td><td>—</td><td class="mob-hide">${h.shares}</td><td class="mob-hide">$${n2(h.avgPrice)}</td><td class="mob-hide">$${n2(cost)}</td><td class="mob-hide">—</td><td>—</td><td>—</td><td class="mob-hide">—</td>${expTd}</tr>`;
   const val=h.shares*d.price,valTwd=val*usdRate,pnl=val-cost,pp=cost>0?pnl/cost*100:0;
   const cc=d.chg>=0?'pos':'neg',pc=pnl>=0?'pos':'neg',fc=(fxPnl||0)>=0?'pos':'neg';
