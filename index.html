@@ -1631,7 +1631,8 @@ function importData(event){
 const EXP_CATS=[
   {name:'餐飲',color:'#f85149'},{name:'交通',color:'#d29922'},{name:'購物',color:'#bc8cff'},
   {name:'娛樂',color:'#58a6ff'},{name:'醫療',color:'#3fb950'},{name:'居家',color:'#f0883e'},
-  {name:'教育',color:'#79c0ff'},{name:'投資',color:'#56d364'},{name:'其他',color:'#8b949e'}
+  {name:'教育',color:'#79c0ff'},{name:'投資',color:'#56d364'},{name:'保險',color:'#e3b341'},
+  {name:'美容',color:'#ff7b72'},{name:'其他',color:'#8b949e'}
 ];
 function expCatColor(cat){return(EXP_CATS.find(c=>c.name===cat)||{color:'#8b949e'}).color;}
 
@@ -1716,32 +1717,65 @@ function importExpenseCsv(event){
   const file=event.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
+    // CSV parser that handles quoted fields
+    const parseRow=line=>{
+      const res=[];let cur='';let inQ=false;
+      for(let i=0;i<line.length;i++){
+        const c=line[i];
+        if(c==='"'){inQ=!inQ;}
+        else if(c===','&&!inQ){res.push(cur.trim());cur='';}
+        else{cur+=c;}
+      }
+      res.push(cur.trim());return res;
+    };
     const lines=e.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
     if(lines.length<2){alert('CSV 格式不符');return;}
-    const header=lines[0].toLowerCase();
-    // auto-detect columns: date, amount, category/cat, note/desc/備註
-    let dateIdx=-1,amtIdx=-1,catIdx=-1,noteIdx=-1;
-    const cols=header.split(',');
-    cols.forEach((c,i)=>{
-      if(/date|日期|時間/.test(c))dateIdx=i;
-      else if(/amount|金額|price|費用/.test(c))amtIdx=i;
-      else if(/cat|類別|分類|category/.test(c))catIdx=i;
-      else if(/note|備註|desc|說明|remark/.test(c))noteIdx=i;
-    });
-    if(dateIdx<0||amtIdx<0){alert('找不到日期或金額欄位，請確認 CSV 包含 date/日期 和 amount/金額 欄位');return;}
-    let added=0;
+    const header=parseRow(lines[0]);
+    // 秒數記帳 category mapping
+    const catMap={
+      '食物':'餐飲','食品':'餐飲','餐飲':'餐飲','早餐':'餐飲','午餐':'餐飲','晚餐':'餐飲',
+      '交通':'交通','運輸':'交通',
+      '娛樂':'娛樂','休閒':'娛樂',
+      '服飾':'購物','購物':'購物','日用':'購物',
+      '居家':'居家','住家':'居家','水電':'居家',
+      '醫療':'醫療','醫藥':'醫療','健康':'醫療',
+      '教育':'教育','學習':'教育',
+      '投資':'投資',
+    };
+    // Detect 秒數記帳 format: col0=日期/時間, col1=類別, col2=品項, col4=價格, col14=花費
+    const isBlinkFmt=/日期/.test(header[0])&&/類別/.test(header[1]);
+    let added=0,skipped=0;
     lines.slice(1).forEach(line=>{
-      const parts=line.split(',');
-      const date=parts[dateIdx]?.trim().slice(0,10);
-      const amt=parseFloat(parts[amtIdx]?.trim().replace(/[^0-9.]/g,''));
-      if(!date||!amt||amt<=0)return;
-      const cat=catIdx>=0?(parts[catIdx]?.trim()||'其他'):'其他';
-      const note=noteIdx>=0?parts[noteIdx]?.trim():'';
-      expenses.push({id:Date.now()+added,date,amount:amt,cat,note});
-      added++;
+      const p=parseRow(line);
+      if(isBlinkFmt){
+        const typeFld=(p[14]||'').trim();
+        if(typeFld!=='花費'){skipped++;return;} // skip 轉帳/收入
+        const date=(p[0]||'').trim().slice(0,10);
+        const catRaw=(p[1]||'').trim();
+        const item=(p[2]||'').trim();
+        const price=parseFloat((p[4]||'').replace(/[^\d.]/g,''));
+        if(!date||!price||price<=0)return;
+        expenses.push({id:Date.now()+added,date,amount:price,cat:catMap[catRaw]||'其他',note:item||catRaw});
+        added++;
+      } else {
+        // generic fallback: auto-detect cols
+        const hi=header.map(h=>h.toLowerCase());
+        const dIdx=hi.findIndex(h=>/date|日期/.test(h));
+        const aIdx=hi.findIndex(h=>/amount|金額|price|價格/.test(h));
+        const cIdx=hi.findIndex(h=>/cat|類別/.test(h));
+        const nIdx=hi.findIndex(h=>/note|備註|品項/.test(h));
+        if(dIdx<0||aIdx<0)return;
+        const date=(p[dIdx]||'').trim().slice(0,10);
+        const price=parseFloat((p[aIdx]||'').replace(/[^\d.]/g,''));
+        if(!date||!price||price<=0)return;
+        const cat=cIdx>=0?(catMap[(p[cIdx]||'').trim()]||p[cIdx]||'其他'):'其他';
+        const note=nIdx>=0?(p[nIdx]||'').trim():'';
+        expenses.push({id:Date.now()+added,date,amount:price,cat,note});
+        added++;
+      }
     });
     S.set('expenses',expenses);renderExpenses();
-    alert(`匯入成功：${added} 筆`);
+    alert(`匯入成功 ${added} 筆${skipped?`（跳過 ${skipped} 筆轉帳/收入）`:''}`);
   };
   reader.readAsText(file,'UTF-8');
   event.target.value='';
