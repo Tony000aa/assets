@@ -1803,19 +1803,9 @@ function renderMonthlyReport(totalAssets){
   const deposits=bankTxns.filter(t=>t.date.startsWith(ym)&&t.type==='DEPOSIT').reduce((s,t)=>s+t.amount,0);
   const withdrawals=bankTxns.filter(t=>t.date.startsWith(ym)&&t.type==='WITHDRAW').reduce((s,t)=>s+t.amount,0);
   const expenseAmt=expenses.filter(e=>e.date.startsWith(ym)).reduce((s,e)=>s+e.amount,0);
-  // goal suggestion
-  const activeGoals=goals.filter(g=>g.targetYear>=now.getFullYear());
-  let suggestion='';
-  if(activeGoals.length>0){
-    const g=activeGoals[0];
-    const progress=g.currentAmount||totalAssets||0;
-    const remaining=Math.max(0,g.targetAmount-progress);
-    const monthsLeft=Math.max(1,(new Date(g.targetYear+'-12-31')-now)/(1000*60*60*24*30.4));
-    const needed=remaining/monthsLeft;
-    const actualSaved=deposits-withdrawals-buyAmt+sellAmt;
-    if(actualSaved<needed)suggestion=`距目標「${g.name}」每月需存入 <b>${twd(needed)}</b>，本月實際投入 <b>${twd(Math.max(0,actualSaved))}</b>，差距 <b class="neg">${twd(needed-actualSaved)}</b>`;
-    else suggestion=`本月進度良好！已達目標存入金額，繼續保持 💪`;
-  }else{suggestion='尚未設定目標，前往「目標」頁面建立存錢計畫';}
+  // net savings rate
+  const netSaved=deposits-withdrawals-expenseAmt;
+  const savingsNote=deposits>0?`本月淨儲蓄 <b class="${netSaved>=0?'pos':'neg'}">${netSaved>=0?'+':''}${twd(netSaved)}</b>（存入 ${twd(deposits)}，支出 ${twd(expenseAmt+withdrawals)}）`:'本月尚無存款異動紀錄';
   const nc=netChg>=0?'pos':'neg';
   wrap.innerHTML=`<div class="monthly-report">
     <div class="mr-title"><span>📊 ${label} 月報</span><span style="font-size:11px;color:var(--text2)">${endVal>0?'':'數據不足，持續追蹤中'}</span></div>
@@ -1827,7 +1817,7 @@ function renderMonthlyReport(totalAssets){
       <div class="mr-item"><div class="mr-label">存款存入</div><div class="mr-val pos">${twd(deposits)}</div></div>
       ${expenseAmt>0?`<div class="mr-item"><div class="mr-label">支出</div><div class="mr-val neg">-${twd(expenseAmt)}</div></div>`:''}
     </div>
-    <div class="mr-suggest">🎯 目標建議：${suggestion}</div>
+    <div class="mr-suggest">💰 儲蓄摘要：${savingsNote}</div>
   </div>`;
 }
 
