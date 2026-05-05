@@ -580,17 +580,76 @@ let lineChart=null, donutChart=null;
 let _modal={mode:'',idx:-1};
 // live price cache for donut chart
 let _twVals={}, _usVals={};
+// TWSE / TPEX open-data session cache (reset each refreshAll)
+let _twseData=null, _tpexData=null;
+// prices.json pre-fetched cache (GitHub Actions)
+let _usPriceCache={}, _pjUpdated=null;
+
+// ── prices.json (GitHub Actions pre-fetched) ──────────────────
+async function loadPricesJson(){
+  try{
+    const r=await fetch('./prices.json?_='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(5000)});
+    if(!r.ok)return;
+    const j=await r.json();
+    if(j.tw)_twseData=Object.assign(_twseData||{},j.tw);
+    if(j.us)_usPriceCache=j.us;
+    if(j.fx){Object.assign(fxRates,j.fx);usdRate=fxRates.USD||usdRate;}
+    _pjUpdated=j.updated||null;
+  }catch{}
+}
+
+// ── TWSE / TPEX open-data (CORS-safe, no key needed) ─────────
+async function fetchTwseAll(){
+  if(_twseData)return _twseData;
+  try{
+    const r=await fetch('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL',
+      {signal:AbortSignal.timeout(12000),cache:'no-store'});
+    if(!r.ok)return null;
+    const arr=await r.json();
+    _twseData={};
+    for(const s of arr){
+      const close=parseFloat(s.ClosingPrice);
+      if(!close)continue;
+      const chg=parseFloat(s.Change)||0;
+      const prev=close-chg;
+      _twseData[s.Code]={price:close,chg:prev>0?chg/prev*100:0,name:s.Name};
+    }
+    return _twseData;
+  }catch{return null;}
+}
+async function fetchTpexAll(){
+  if(_tpexData)return _tpexData;
+  try{
+    const r=await fetch('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_quotes',
+      {signal:AbortSignal.timeout(12000),cache:'no-store'});
+    if(!r.ok)return null;
+    const arr=await r.json();
+    _tpexData={};
+    for(const s of arr){
+      const close=parseFloat(s.Close);
+      if(!close)continue;
+      const prev=parseFloat(s.PreviousClose||close);
+      _tpexData[s.SecuritiesCompanyCode]={price:close,chg:prev>0?(close-prev)/prev*100:0,name:s.CompanyName||s.SecuritiesCompanyCode};
+    }
+    return _tpexData;
+  }catch{return null;}
+}
 
 // ── Price fetch ───────────────────────────────────────────────
 async function yf(sym,tw=false){
+  if(!tw&&_usPriceCache[sym])return _usPriceCache[sym];
   const base=tw
     ?`?interval=1d&range=1d&lang=zh-TW&region=TW`
     :`?interval=1d&range=1d`;
   const bust=`&_=${Date.now()}`;
+  const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}${base}`;
+  const yfUrl2=`https://query2.finance.yahoo.com/v8/finance/chart/${sym}${base}`;
   const urls=[
-    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}${base}${bust}`,
-    `https://query2.finance.yahoo.com/v8/finance/chart/${sym}${base}${bust}`,
-    `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${sym}${base}`,
+    yfUrl+bust,
+    yfUrl2+bust,
+    `https://corsproxy.io/?url=${encodeURIComponent(yfUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,
+    `https://corsproxy.io/?${yfUrl}`,
   ];
   for(const u of urls){try{
     const r=await fetch(u,{signal:AbortSignal.timeout(8000),cache:'no-store'});
@@ -599,7 +658,6 @@ async function yf(sym,tw=false){
     const res=j?.chart?.result?.[0];if(!res)continue;
     const m=res.meta,price=m.regularMarketPrice;if(!price)continue;
     const prev=m.chartPreviousClose||m.previousClose||price;
-    // TW stocks: shortName is Chinese (e.g.台積電), longName is English official name
     const name=tw?(m.shortName||m.longName||m.symbol||sym):(m.longName||m.shortName||m.symbol||sym);
     return{price,chg:(price-prev)/prev*100,name};
   }catch{}}
@@ -622,16 +680,22 @@ async function getTwChineseName(ticker){
   }catch{}}
   return null;
 }
-// 台股專用：自動試 .TW（上市）和 .TWO（上櫃），並補抓中文名
+// 台股專用：Yahoo Finance → TWSE/TPEX 開放資料備援
 async function fetchTwPrice(ticker){
-  const isCn=s=>/[\u4e00-\u9fa5]/.test(s);
+  const isCn=s=>/[一-龥]/.test(s);
+  // 1. Yahoo Finance（即時，但常被 CORS 擋）
   let r=await yf(ticker+'.TW',true)||await yf(ticker+'.TWO',true);
-  if(!r)return null;
-  if(!isCn(r.name)){
-    const cn=await getTwChineseName(ticker);
-    if(cn)r.name=cn;
+  if(r?.price){
+    if(!isCn(r.name)){const cn=await getTwChineseName(ticker);if(cn)r.name=cn;}
+    return r;
   }
-  return r;
+  // 2. TWSE 上市開放資料（CORS 安全，收盤後更新）
+  const twse=await fetchTwseAll();
+  if(twse?.[ticker])return twse[ticker];
+  // 3. TPEX 上櫃開放資料
+  const tpex=await fetchTpexAll();
+  if(tpex?.[ticker])return tpex[ticker];
+  return null;
 }
 async function fetchFxRates(){
   await Promise.all(Object.entries(FX_PAIRS).map(async([cur,sym])=>{
@@ -1253,14 +1317,17 @@ function manualSave(){
   setTimeout(()=>{btn.textContent='💾 儲存';btn.style.color='';btn.style.borderColor='';},2000);
 }
 async function refreshAll(){
+  _twseData=null;_tpexData=null;_usPriceCache={};_pjUpdated=null;
   document.getElementById('last-update').textContent='更新中…';
+  await loadPricesJson();
   await fetchFxRates();
   const [twVal,usVal]=await Promise.all([renderTw(),renderUs()]);
   const bankVal=renderBank();
   renderDividends();renderTxns();renderMonthlySummary();renderExpenses();
   updateTotals(twVal,usVal,bankVal);
   fetchBenchmark();
-  document.getElementById('last-update').textContent='更新 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const pjTime=_pjUpdated?'（股價 '+new Date(_pjUpdated).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'）':'';
+  document.getElementById('last-update').textContent='更新 '+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+pjTime;
 }
 
 // ── Modal helpers ─────────────────────────────────────────────
