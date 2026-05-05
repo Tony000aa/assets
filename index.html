@@ -587,15 +587,23 @@ let _usPriceCache={}, _pjUpdated=null;
 
 // ── prices.json (GitHub Actions pre-fetched) ──────────────────
 async function loadPricesJson(){
-  try{
-    const r=await fetch('./prices.json?_='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(5000)});
-    if(!r.ok)return;
-    const j=await r.json();
-    if(j.tw)_twseData=Object.assign(_twseData||{},j.tw);
-    if(j.us)_usPriceCache=j.us;
-    if(j.fx){Object.assign(fxRates,j.fx);usdRate=fxRates.USD||usdRate;}
-    _pjUpdated=j.updated||null;
-  }catch{}
+  const bust='?_='+Date.now();
+  const urls=[
+    'https://raw.githubusercontent.com/Tony000aa/assets/main/prices.json'+bust,
+    './prices.json'+bust,
+  ];
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(8000)});
+      if(!r.ok)continue;
+      const j=await r.json();
+      if(j.tw)_twseData=Object.assign(_twseData||{},j.tw);
+      if(j.us)_usPriceCache=j.us;
+      if(j.fx){Object.assign(fxRates,j.fx);usdRate=fxRates.USD||usdRate;}
+      _pjUpdated=j.updated||null;
+      return;
+    }catch{}
+  }
 }
 
 // ── TWSE / TPEX open-data (CORS-safe, no key needed) ─────────
